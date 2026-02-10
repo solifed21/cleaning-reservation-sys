@@ -37,7 +37,7 @@ cleaning-reservation-sys/
   - `index.tsx`에서 **Auth Gate(세션/role 기반 redirect)**
   - 역할별 **Tabs + Stack** 혼합 구조, 공통 화면(예약상세/채팅/리뷰/설정)은 `(shared)`로 재사용
   - 컴포넌트/feature/lib/store 권장 폴더 구조 포함
-  - (용어) DB(02)=`bookings`, API(03)=`bookings`로 통일 (과거 `reservations` 표기는 legacy)
+  - (용어) 서버/DB/API는 `bookings`로 통일(과거 `reservations` 표기는 legacy)하고, UI 문맥에서 “예약(booking)”으로 표기
 
 ## Database Schema
 
