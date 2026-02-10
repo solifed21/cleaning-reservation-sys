@@ -623,9 +623,11 @@ export async function updateCleanerProfile(data: UpdateCleanerProfileInput): Pro
 
 ---
 
-## ✅ 다음 단계
+## 📝 관련 문서
 
-- [ ] 04. 모바일 앱 화면 설계
-- [ ] 05. 웹 대시보드 설계
-- [ ] 06. UI/UX 테마 & 디자인 시스템
-- [ ] 02. DB 스키마 & 데이터 모델 (보완 필요)
+- [x] 01. PRD & 아키텍처
+- [x] 02. DB 스키마 & 데이터 모델
+- [x] 04. 모바일 앱 화면 설계
+- [x] 05. 웹 대시보드 설계
+- [x] 06. UI/UX 테마 & 디자인 시스템
+- [x] 07. 모노레포 설계
