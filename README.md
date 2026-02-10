@@ -37,14 +37,14 @@ cleaning-reservation-sys/
   - `index.tsx`에서 **Auth Gate(세션/role 기반 redirect)**
   - 역할별 **Tabs + Stack** 혼합 구조, 공통 화면(예약상세/채팅/리뷰/설정)은 `(shared)`로 재사용
   - 컴포넌트/feature/lib/store 권장 폴더 구조 포함
-  - (용어) DB(02)=`bookings`, API(03)=`reservations` → 문서에서 reservation(=booking) 병기
+  - (용어) DB(02)=`bookings`, API(03)=`bookings`로 통일 (과거 `reservations` 표기는 legacy)
 
 ## Database Schema
 
 Drizzle ORM 기반 타입 안전 데이터베이스 설계
 
 - 상세 설계/ERD: `docs/plans/02-db-schema.md`
-- 용어: 구현은 `bookings`, API 문서(03)는 `reservations`(=bookings)로 표기
+- 용어: 구현/API 모두 `bookings`로 표기(legacy로 `reservations`가 등장할 수 있음)
 
 ### 주요 테이블
 
