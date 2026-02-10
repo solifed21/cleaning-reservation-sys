@@ -95,7 +95,7 @@ pnpm drizzle-kit push
 | # | 문서 | 상태 |
 |---|------|------|
 | 01 | [PRD & 아키텍처](docs/plans/01-prd-architecture.md) | ✅ 완료 |
-| 02 | [DB 스키마 & 데이터 모델](docs/plans/02-database-schema.md) | ✅ 완료 (v7, 2026-02-11) |
+| 02 | [DB 스키마 & 데이터 모델](docs/plans/02-database-schema.md) | ✅ 완료 (v8, 2026-02-11) |
 | 03 | [API 엔드포인트](docs/plans/03-api-endpoints.md) | ✅ 완료 (v1, 2026-02-11) |
 | 04 | [모바일 앱 화면 설계](docs/plans/04-mobile-screens.md) | ✅ 완료 (v3, 2026-02-11) |
 | 05 | [웹 대시보드 설계](docs/plans/05-web-dashboard.md) | ✅ 완료 |

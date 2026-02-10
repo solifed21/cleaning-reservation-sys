@@ -5,9 +5,9 @@ PostgreSQL(Neon/Supabase) + **Drizzle ORM** 기반의 데이터 모델 설계 �
 - 대상: C2C 청소 예약(요청자/제공자), 예약 기반 메시지, 리뷰, 알림
 - 목표: **타입 안전성**, **정합성(FK/UNIQUE/ENUM/Index)**, **MVP에 과하지 않은 확장성**
 - 기준 스키마 코드: `apps/web/server/db/schema/*.ts`
-- 문서 버전: **v7 (2026-02-11)**
+- 문서 버전: **v8 (2026-02-11)**
 
-> 이 문서는 “테이블 정의 나열”보다, **왜 이런 구조인지 / 어떤 규칙으로 운용해야 안전한지**를 설명합니다.
+> 이 문서는 “테이블 정의 나열”이 아니라, **왜 이런 구조인지 / 어떤 규칙으로 운용해야 안전한지**를 설명합니다.
 
 ---
 
@@ -152,119 +152,125 @@ erDiagram
 
 ---
 
-## 2) 테이블 설계 상세
+## 2) 테이블 목록 (MVP)
 
-### 2.1 `users`
-- 파일: `apps/web/server/db/schema/users.ts`
-- 목적: 인증/권한의 단일 주체
-
-핵심 컬럼
-- `email` (unique, not null)
-- `password` (nullable): OAuth 유저는 null
-- `name` (not null)
-- `phone` (not null)
-- `role` (`user_role`)
-- `kakao_id`, `naver_id` (unique, nullable)
-- `is_active`, `email_verified`
-
-결정
-- 고객/제공자를 “분리 테이블”로 두지 않고 `role`로 구분
-  - 예약/메시지/리뷰 FK가 단순해짐
-
-권장 검증
-- `phone` 형식(E.164 또는 국내 형식) 통일
-- OAuth 유저의 경우 `password is null` 규칙을 서버에서 강제
+| 테이블 | 목적 |
+|---|---|
+| `users` | 인증/권한의 단일 주체 |
+| `cleaner_profiles` | 제공자 전용 확장 프로필 (1:1) |
+| `available_times` | 제공자 정기 가능 시간(요일/시간대) |
+| `areas`, `sub_areas` | 서비스 지역(계층) |
+| `cleaner_service_areas` | 제공자-지역 매핑(N:M) |
+| `bookings` | 예약(요청→수락→진행→완료/취소) |
+| `messages` | 예약 기반 메시지 |
+| `reviews` | 예약 기반 리뷰 |
+| `notifications` | 인앱 알림 |
 
 ---
 
-### 2.2 `cleaner_profiles`
+## 3) 스키마 스냅샷(컬럼/제약/인덱스)
+
+> 아래는 “문서 이해를 돕는 요약”입니다. 최종 기준은 스키마 코드입니다.
+
+### 3.1 `users`
+- 파일: `apps/web/server/db/schema/users.ts`
+
+- PK: `id (text)`
+- UNIQUE: `email`, `kakao_id`, `naver_id`
+- 필수: `email`, `name`, `phone`, `role`
+
+주요 컬럼
+- `password (text, nullable)` — OAuth 유저는 null
+- `profile_image (text, nullable)`
+- `is_active (bool, default true)`
+- `email_verified (bool, default false)`
+- `created_at`, `updated_at`
+
+운영 규칙(권장)
+- OAuth 유저는 `password is null`을 서버에서 강제
+- `phone`은 한 가지 포맷으로 normalize(예: E.164 또는 국내 규칙)
+
+---
+
+### 3.2 `cleaner_profiles`
 - 파일: `apps/web/server/db/schema/cleaner-profiles.ts`
-- 목적: 제공자(청소부) 전용 확장 정보
 
-관계
-- `user_id` → `users.id` (FK, `onDelete: cascade`)
-- `user_id` unique (users:cleaner_profiles = 1:1)
+- FK: `user_id -> users.id (onDelete: cascade)`
+- UNIQUE: `user_id` (users:cleaner_profiles = 1:1)
 
-핵심 컬럼
+주요 컬럼(요약)
 - `intro`, `price_per_hour`
 - denormalized stats: `total_bookings`, `total_reviews`, `average_rating`
 - 상태: `is_verified`, `is_available`
 
 운영 규칙(권장)
-- 리뷰 생성/수정 시 `total_reviews`, `average_rating`를 트랜잭션으로 갱신
-- 예약 완료 처리 시 `total_bookings` 갱신
+- 리뷰 생성/수정 시 통계 컬럼을 트랜잭션으로 갱신
+- 예약 완료 시 `total_bookings` 갱신
 
 ---
 
-### 2.3 `areas`, `sub_areas`
+### 3.3 `areas`, `sub_areas`
 - 파일: `apps/web/server/db/schema/areas.ts`
-- 목적: 서비스 지역 계층(예: 구/동)
 
-관계
-- `sub_areas.area_id` → `areas.id` (FK, `onDelete: cascade`)
-
-핵심 컬럼
-- `name`, `sort_order`
+- `sub_areas.area_id -> areas.id (onDelete: cascade)`
 
 seed 권장
-- 지역 데이터는 마이그레이션에 하드코딩하기보다 `seed` 스크립트로 관리
+- 지역 데이터는 migration에 하드코딩하기보다 `seed` 스크립트로 관리
 
 ---
 
-### 2.4 `cleaner_service_areas`
+### 3.4 `cleaner_service_areas`
 - 파일: `apps/web/server/db/schema/cleaner-service-areas.ts`
-- 목적: 제공자-지역 매핑(N:M)
 
-제약
-- `unique(profile_id, sub_area_id)`로 중복 등록 방지
+- FK: `profile_id -> cleaner_profiles.id (cascade)`
+- FK: `sub_area_id -> sub_areas.id (cascade)`
+- UNIQUE: `(profile_id, sub_area_id)`
 
 ---
 
-### 2.5 `available_times`
+### 3.5 `available_times`
 - 파일: `apps/web/server/db/schema/available-times.ts`
-- 목적: 제공자의 요일별 정기 가능 시간
 
-핵심 컬럼
-- `day_of_week` (0~6): 0=일요일
-- `start_time`, `end_time`
+- FK: `profile_id -> cleaner_profiles.id (cascade)`
+
+주요 컬럼
+- `day_of_week (int: 0~6)` — 0=일요일
+- `start_time (time)`, `end_time (time)`
 
 정합성(현재: 앱 레벨)
 - `start_time < end_time`
 - 동일 `profile_id + day_of_week` 내 시간대 겹침 방지
 
 확장
-- 특정 날짜 예외(휴무/추가 오픈)를 지원하려면 `availability_exceptions` 테이블 추가
+- 특정 날짜 예외(휴무/추가 오픈)가 필요하면 `availability_exceptions` 테이블 추가
 
 ---
 
-### 2.6 `bookings`
+### 3.6 `bookings`
 - 파일: `apps/web/server/db/schema/bookings.ts`
-- 목적: “요청 등록 → 수락 → 진행 → 완료/취소”의 단일 엔티티
 
 관계
-- `customer_id` → `users.id` (FK, cascade)
-- `cleaner_id` → `users.id` (FK, set null)
-- `sub_area_id` → `sub_areas.id`
+- `customer_id -> users.id (cascade)`
+- `cleaner_id -> users.id (set null)` — 수락 전/미배정 시 null
+- `sub_area_id -> sub_areas.id`
 
 상태
-- `status` (`booking_status`)
-  - `pending` → `confirmed` → `in_progress` → `completed`
-  - 언제든 취소되면 `cancelled`
+- `status (booking_status, default pending)`
 
 일정
-- `scheduled_date`, `scheduled_time`, `duration`
+- `scheduled_date (date)`, `scheduled_time (time)`, `duration (int)`
 
 주소/요청
-- `address`, `address_detail`
-- `room_type`, `room_size`
-- `services: text[]` (서버에서 `service_type` 멤버만 허용)
-- `description`, `budget`
+- `address (text)`, `address_detail (text, nullable)`
+- `room_type (room_type)`, `room_size (int, nullable)`
+- `services (text[])` — 서버에서 `service_type` 멤버만 허용
+- `description (text, nullable)`, `budget (int, nullable)`
 
 완료/취소
-- 완료: `completion_photos[]`, `completion_notes`, `completed_at`
-- 취소: `cancelled_by`, `cancel_reason`, `cancelled_at`
+- 완료: `completion_photos (text[])`, `completion_notes (text)`, `completed_at (timestamp)`
+- 취소: `cancelled_by (text)`, `cancel_reason (text)`, `cancelled_at (timestamp)`
 
-인덱스(현재 스키마에 포함)
+인덱스(스키마 포함)
 - `(customer_id, status)`
 - `(cleaner_id, status)`
 - `(sub_area_id, scheduled_date)`
@@ -272,28 +278,23 @@ seed 권장
 
 운영 규칙(권장)
 - 상태 전이는 서버에서만 수행
-- `confirmed` 전환 시 `cleaner_id`를 반드시 세팅
+- `confirmed` 전환 시 `cleaner_id` 반드시 세팅
 - `completed` 전환 시 `completed_at` 필수
 - `cancelled` 전환 시 `cancelled_at`, `cancelled_by` 필수
 
-동시 수락 경쟁(핵심)
+동시 수락 경쟁(중요)
 - `accept`는 반드시 “조건부 업데이트”로 처리
   - 예: `WHERE status='pending' AND cleaner_id IS NULL`
   - 실패 시 `CONFLICT` 반환
 
 ---
 
-### 2.7 `messages`
+### 3.7 `messages`
 - 파일: `apps/web/server/db/schema/messages.ts`
-- 목적: 예약 기반 메시지(MVP 폴링)
 
 관계
-- `booking_id` → `bookings.id` (cascade)
-- `sender_id` → `users.id` (cascade)
-
-핵심 컬럼
-- `type`, `content`, `image_url`
-- `is_read`, `read_at` (MVP 단순 모델)
+- `booking_id -> bookings.id (cascade)`
+- `sender_id -> users.id (cascade)`
 
 인덱스
 - `(booking_id, created_at)`
@@ -303,12 +304,11 @@ seed 권장
 
 ---
 
-### 2.8 `reviews`
+### 3.8 `reviews`
 - 파일: `apps/web/server/db/schema/reviews.ts`
-- 목적: 청소 완료 후 리뷰(별점/내용/태그)
 
 현재 제약
-- `booking_id` unique → 예약당 리뷰 1개
+- `booking_id UNIQUE` → 예약당 리뷰 1개
 
 의미
 - MVP에서는 우선 “고객 → 청소부” 1개 리뷰로 출발하기 쉬움
@@ -328,17 +328,11 @@ seed 권장
 
 ---
 
-### 2.9 `notifications`
+### 3.9 `notifications`
 - 파일: `apps/web/server/db/schema/notifications.ts`
-- 목적: 인앱 알림/푸시 원천 데이터
 
 관계
-- `user_id` → `users.id` (cascade)
-
-핵심 컬럼
-- `type`, `title`, `body`
-- `related_type`, `related_id` (딥링크)
-- `is_read`, `read_at`
+- `user_id -> users.id (cascade)`
 
 인덱스
 - `(user_id, is_read)`
@@ -346,7 +340,7 @@ seed 권장
 
 ---
 
-## 3) 조회 패턴 & 인덱싱 가이드
+## 4) 조회 패턴 & 인덱싱 가이드
 
 자주 하는 쿼리
 - 고객: 내 예약 목록(status별)
@@ -364,7 +358,7 @@ seed 권장
 
 ---
 
-## 4) 서버 액션에서 강제해야 하는 정합성 체크리스트
+## 5) 서버 액션에서 강제해야 하는 정합성 체크리스트
 
 DB 제약만으로 부족한 규칙을 서버에서 **반드시 검증/거절**합니다.
 
@@ -378,7 +372,7 @@ DB 제약만으로 부족한 규칙을 서버에서 **반드시 검증/거절**�
 
 ---
 
-## 5) 예약 상태 전이(State machine) 가이드
+## 6) 예약 상태 전이(State machine) 가이드
 
 권장 전이
 - `pending` → `confirmed` (제공자 수락)
@@ -394,7 +388,7 @@ DB 제약만으로 부족한 규칙을 서버에서 **반드시 검증/거절**�
 
 ---
 
-## 6) Post-MVP로 승격할 수 있는 DB 레벨 제약
+## 7) Post-MVP로 승격할 수 있는 DB 레벨 제약
 
 운영 전/후로 데이터 품질을 강화하고 싶다면 다음을 DB 레벨로 승격하세요.
 
@@ -408,7 +402,7 @@ DB 제약만으로 부족한 규칙을 서버에서 **반드시 검증/거절**�
 
 ---
 
-## 7) 마이그레이션/운영
+## 8) 마이그레이션/운영
 
 - 스키마 위치: `apps/web/server/db/schema/`
 - Drizzle kit
@@ -430,7 +424,7 @@ pnpm drizzle-kit push
 
 ---
 
-## 8) Post-MVP 확장 후보
+## 9) Post-MVP 확장 후보
 
 - 결제/정산: `payments`, `payouts`, `refunds`
 - 정기 예약: `recurring_bookings`, `booking_instances`
