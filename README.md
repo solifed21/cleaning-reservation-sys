@@ -8,6 +8,8 @@
 - **Web**: TanStack Start + React
 - **Styling**: Tailwind CSS
 - **Backend**: TanStack Start (Full-stack)
+- **Database**: PostgreSQL (Neon/Supabase)
+- **ORM**: Drizzle ORM
 
 ## 프로젝트 구조
 
@@ -16,12 +18,62 @@ cleaning-reservation-sys/
 ├── apps/
 │   ├── mobile/          # Expo React Native 앱
 │   └── web/             # TanStack Start 웹 + API
+│       └── server/
+│           └── db/
+│               ├── schema/    # Drizzle ORM 스키마
+│               └── migrations/ # DB 마이그레이션
 ├── packages/
 │   ├── shared/          # 공유 타입, 유틸리티
 │   └── ui/              # 공유 UI 컴포넌트
 ├── docs/
 │   └── plans/           # 설계 문서
 └── README.md
+```
+
+## Database Schema
+
+Drizzle ORM 기반 타입 안전 데이터베이스 설계
+
+### 주요 테이블
+
+- **users**: 사용자 정보 (OAuth 지원)
+- **cleaner_profiles**: 청소 제공자 프로필
+- **available_times**: 제공자 가능 시간
+- **areas / sub_areas**: 서비스 지역
+- **cleaner_service_areas**: 제공자-지역 매핑
+- **bookings**: 예약 정보
+- **messages**: 예약 기반 메시지
+- **reviews**: 상호 리뷰
+- **notifications**: 알림
+
+### 스키마 파일 위치
+
+```
+apps/web/server/db/schema/
+├── users.ts
+├── cleaner-profiles.ts
+├── available-times.ts
+├── areas.ts
+├── cleaner-service-areas.ts
+├── bookings.ts
+├── messages.ts
+├── reviews.ts
+├── notifications.ts
+├── relations.ts
+└── index.ts
+```
+
+### 마이그레이션
+
+```bash
+# 스키마 변경 감지
+pnpm drizzle-kit generate
+
+# 마이그레이션 실행
+pnpm drizzle-kit migrate
+
+# 개발용 push
+pnpm drizzle-kit push
 ```
 
 ## Plans
