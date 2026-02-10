@@ -43,7 +43,7 @@ cleaning-reservation-sys/
 
 Drizzle ORM 기반 타입 안전 데이터베이스 설계
 
-- 상세 설계/ERD: `docs/plans/02-db-schema.md`
+- 상세 설계/ERD: `docs/plans/02-database-schema.md`
 - 용어: 구현/API 모두 `bookings`로 표기(legacy로 `reservations`가 등장할 수 있음)
 
 ### 주요 테이블
@@ -97,7 +97,7 @@ pnpm drizzle-kit push
 | 01 | [PRD & 아키텍처](docs/plans/01-prd-architecture.md) | ✅ 완료 |
 | 02 | [DB 스키마 & 데이터 모델](docs/plans/02-database-schema.md) | ✅ 완료 (v3, 2026-02-11) |
 | 03 | [API 엔드포인트](docs/plans/03-api-endpoints.md) | ✅ 완료 (v1, 2026-02-11) |
-| 04 | [모바일 앱 화면 설계](docs/plans/04-mobile-screens.md) | ✅ 완료 (v1, 2026-02-11) |
+| 04 | [모바일 앱 화면 설계](docs/plans/04-mobile-screens.md) | ✅ 완료 (v2, 2026-02-11) |
 | 05 | [웹 대시보드 설계](docs/plans/05-web-dashboard.md) | ✅ 완료 |
 | 06 | [UI/UX 테마 & 디자인 시스템](docs/plans/06-ui-theme.md) | ✅ 완료 (v1, 2026-02-11) |
 | 07 | [모노레포 설계](docs/plans/07-monorepo-setup.md) | ✅ 완료 (v2, 2026-02-11) |
