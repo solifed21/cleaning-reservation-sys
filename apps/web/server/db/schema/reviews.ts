@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, smallint, boolean, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, smallint, boolean, index, pgEnum } from 'drizzle-orm/pg-core';
 import { bookings } from './bookings';
 import { users } from './users';
 
