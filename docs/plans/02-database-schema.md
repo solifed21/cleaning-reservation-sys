@@ -1,29 +1,43 @@
 # 02. DB 스키마 & 데이터 모델
 
 PostgreSQL(Neon/Supabase) + Drizzle ORM 기반의 데이터 모델 설계 문서입니다.
-실제 스키마 코드는 `apps/web/server/db/schema/` 에 구현되어 있으며, 본 문서는 “왜 이런 구조인가/어떻게 쓰는가”에 초점을 둡니다.
+실제 스키마 코드는 `apps/web/server/db/schema/` 에 구현되어 있으며, 본 문서는 “왜 이런 구조인가/어떻게 안전하게 쓰는가”에 초점을 둡니다.
 
 - 대상: C2C 청소 예약(요청자/제공자), 예약 기반 메시지, 리뷰, 알림
 - 설계 목표: **타입 안전성**, **정합성(제약/ENUM/관계)**, **MVP에 과하지 않은 확장성**
+- 기준 스키마: `apps/web/server/db/schema/*.ts` (2026-02-11)
 
 ---
 
 ## 0) 기본 규칙 (Conventions)
 
-### ID
-- 모든 PK는 `text`(UUID 문자열) 사용
+### 0.1 ID
+- 모든 PK는 `text`(UUID 문자열)
 - 기본값: `$defaultFn(() => crypto.randomUUID())`
   - 장점: 앱 레벨에서 ID 선점 가능, Drizzle 타입 추론이 단순
 
-### Timestamp
+### 0.2 Timestamp
 - 대부분 테이블에 `created_at`, `updated_at`
-- `updated_at` 자동 갱신 트리거는 현재 스키마에 없음(MVP). 서버 액션에서 업데이트 책임.
+- `updated_at` 자동 갱신 트리거는 MVP에서 미적용
+  - 서버 액션(또는 DB 레이어)에서 업데이트 책임
 
-### Enum
-- 핵심 상태/타입은 DB enum으로 강제
-  - `user_role`, `booking_status`, `room_type`, `service_type`, `message_type`, `notification_type`
+### 0.3 Enum (DB enum 강제)
+핵심 상태/타입은 PostgreSQL enum으로 강제하여 **상태 값의 오염**을 막습니다.
 
-### Soft delete
+- `user_role`: `customer | cleaner`
+- `booking_status`: `pending | confirmed | in_progress | completed | cancelled`
+- `room_type`: `oneRoom | twoRoom | threeRoom | studio | office`
+- `service_type`: `basic_cleaning | bathroom | kitchen | window | move_in | move_out`
+- `message_type`: `text | image | system`
+- `notification_type`:
+  - `booking_created | booking_accepted | booking_rejected | booking_cancelled | booking_reminder | booking_completed | new_message | new_review`
+- `review_tag`:
+  - `친절해요 | 시간 준수 | 꼼꼼해요 | 깨끗해요 | 추천해요`
+
+> 참고: 현재 `service_type`, `review_tag`는 enum이 **정의는 되어있지만**, 실제 컬럼(`services`, `tags`) 타입은 `text[]` 입니다.
+> 따라서 DB 차원에서 배열 원소가 enum에 속하는지까지는 강제하지 못하고, **서버 액션에서 값 검증**을 합니다.
+
+### 0.4 Soft delete
 - MVP에서는 soft delete를 기본 채택하지 않음
   - 사유: 로직/인덱스/필터 복잡도 증가
   - 필요 시: `deleted_at` 컬럼 추가 + 조회 스코프 표준화로 확장
@@ -32,7 +46,7 @@ PostgreSQL(Neon/Supabase) + Drizzle ORM 기반의 데이터 모델 설계 문서
 
 ## 1) ERD (Entity Relationship Diagram)
 
-> 실제 구현과 1:1로 맞춰서 작성했습니다(필드명은 문서 가독성을 위해 일부 축약).
+> 현재 스키마 구조를 기준으로 작성했습니다.
 
 ```mermaid
 erDiagram
@@ -205,10 +219,6 @@ erDiagram
 - `is_active`: 탈퇴/정지 등 상태
 - `email_verified`: 이메일 검증 여부
 
-제약/인덱스
-- `email` unique
-- `kakao_id`, `naver_id` unique
-
 설계 메모
 - 고객/제공자를 분리 테이블로 두지 않고 role로 구분 → 예약/메시지/리뷰에서 FK가 단순해짐
 
@@ -239,7 +249,7 @@ erDiagram
 
 ### 2.3 `areas`, `sub_areas`
 - 파일: `apps/web/server/db/schema/areas.ts`
-- 목적: 서비스 지역의 계층(구/동)을 정규화
+- 목적: 서비스 지역의 계층(예: 구/동)을 정규화
 
 관계
 - `sub_areas.area_id` → `areas.id` (FK, `onDelete: cascade`)
@@ -272,18 +282,18 @@ erDiagram
 - `day_of_week` (0~6): 0=일요일
 - `start_time`, `end_time`
 
-정합성 규칙(앱 레벨)
+정합성 규칙(현재: 앱 레벨)
 - `start_time < end_time`
-- 동일 `profile_id + day_of_week` 내 시간대 겹침 방지(현재 DB 제약은 없음)
+- 동일 `profile_id + day_of_week` 내 시간대 겹침 방지
 
 확장 포인트
-- 특정 날짜 예외(휴무/추가 가능)를 지원하려면 `availability_exceptions` 테이블 추가를 권장
+- 특정 날짜 예외(휴무/추가 가능)를 지원하려면 `availability_exceptions` 테이블 추가 권장
 
 ---
 
 ### 2.6 `bookings`
 - 파일: `apps/web/server/db/schema/bookings.ts`
-- 목적: 예약(요청) 단일 엔티티로 요청→수락→진행→완료/취소의 상태 흐름을 표현
+- 목적: 예약(요청) 단일 엔티티로 요청→수락→진행→완료/취소 상태 흐름을 표현
 
 관계
 - `customer_id` → `users.id` (FK, cascade)
@@ -308,7 +318,7 @@ erDiagram
 - `address`, `address_detail`
 - `room_type` (`room_type`)
 - `services` (text[]) : 선택 서비스 목록
-  - 값은 `service_type` enum의 value를 사용하도록 앱에서 강제
+  - 값은 `service_type`의 value(`basic_cleaning` 등)를 사용하도록 **서버에서 검증**
 - `budget` (optional)
 
 완료/취소
@@ -358,7 +368,7 @@ erDiagram
 
 관계/제약
 - `booking_id` unique
-  - 현재 구현은 예약당 리뷰 1개(단방향) 모델
+  - 현재 구현은 예약당 리뷰 1개 모델
   - “상호 리뷰(고객↔제공자)”가 필요하면 아래 중 하나로 변경 권장
     1) `unique(booking_id, author_id)`로 바꾸고 한 예약당 2개 허용
     2) `review_threads`(예약당 1개) + `review_entries`(2개)로 분리
@@ -367,7 +377,7 @@ erDiagram
 - `author_id` → 작성자
 - `recipient_id` → 대상자
 - `rating` (1~5)
-- `tags` (text[]) : `review_tag` 값 사용을 앱에서 강제
+- `tags` (text[]) : `review_tag` 값 사용을 서버에서 검증
 - `can_edit`: 24시간 내 수정 가능 등 정책용 플래그
 
 인덱스
@@ -417,12 +427,15 @@ erDiagram
 
 ## 4) 데이터 정합성 체크리스트 (서버 액션에서 강제)
 
+DB 제약만으로 부족한 부분은 서버 액션에서 **반드시 검증/거절**합니다.
+
 - `users.role = cleaner` 인 경우에만 `cleaner_profiles` 생성 허용
-- `bookings.status = confirmed` 이면 `cleaner_id` not null로 강제(앱 레벨)
+- `bookings.status = confirmed` 이면 `cleaner_id` not null로 강제
 - `bookings.status = completed` 이면 `completed_at` 세팅
 - `bookings.status = cancelled` 이면 `cancelled_at`, `cancelled_by` 세팅
 - `available_times` 시간대 겹침 방지
-- `services[]`, `tags[]` 값은 각각 `service_type`, `review_tag`의 허용 값만 사용
+- `bookings.services[]` 값은 `service_type` 값만 허용
+- `reviews.tags[]` 값은 `review_tag` 값만 허용
 
 ---
 
