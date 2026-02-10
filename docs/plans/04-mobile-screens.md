@@ -190,8 +190,8 @@ app/
 
 ## ✅ 체크리스트
 
-- [ ] Expo Router 기반 파일 구조 생성
-- [ ] NativeWind 설정 및 테마 컬러 정의
-- [ ] 공통 UI 컴포넌트 (Button, Input, Card) 구현
-- [ ] 인증 화면 (Login, Signup) 퍼블리싱
-- [ ] 탭 네비게이션 (Customer/Cleaner 분기) 구현
+- [x] Expo Router 기반 파일 구조 생성
+- [x] NativeWind 설정 및 테마 컬러 정의
+- [x] 공통 UI 컴포넌트 (Button, Input, Card) 구현
+- [x] 인증 화면 (Login, Signup) 퍼블리싱
+- [x] 탭 네비게이션 (Customer/Cleaner 분기) 구현
