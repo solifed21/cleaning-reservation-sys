@@ -6,7 +6,7 @@ PostgreSQL(Neon/Supabase) + Drizzle ORM 기반의 데이터 모델 설계 문서
 - 대상: C2C 청소 예약(요청자/제공자), 예약 기반 메시지, 리뷰, 알림
 - 설계 목표: **타입 안전성**, **정합성(제약/ENUM/관계)**, **MVP에 과하지 않은 확장성**
 - 기준 스키마: `apps/web/server/db/schema/*.ts`
-- 문서 버전: **v5 (2026-02-11)**
+- 문서 버전: **v6 (2026-02-11)**
 
 ---
 
@@ -66,6 +66,31 @@ MVP에서 “선택 목록” 성격이고 **조회가 단순**한 항목은 `te
 - 항목 자체에 속성(수량/가격/정렬/메모)이 붙는다
 - 항목별 집계/검색이 중요해진다(예: 특정 서비스가 포함된 예약만 필터)
 - DB 차원에서 정합성 강제가 꼭 필요하다(enum membership, FK 등)
+
+---
+
+### 0.7 네이밍 규칙 (DB snake_case ↔ 코드 camelCase)
+- DB 컬럼/테이블: `snake_case`
+- Drizzle 스키마 필드명: `camelCase`
+  - 예: `customer_id` → `customerId`, `created_at` → `createdAt`
+- API/JSON 응답은 원칙적으로 **camelCase**로 통일
+  - (주의) DB row를 그대로 반환하지 말고, 서버 레이어에서 DTO로 정규화
+
+### 0.8 FK onDelete 정책 (왜 cascade/set null인가)
+- **소유/종속 데이터**는 `onDelete: cascade`
+  - 예: `cleaner_profiles.user_id`(프로필은 유저에 종속), `messages.booking_id`(메시지는 예약에 종속)
+- **기록 보존이 더 중요한 참조**는 `set null` 또는 `restrict`
+  - 예: `bookings.cleaner_id`는 제공자 계정이 삭제되어도 예약 기록을 남기기 위해 `set null`
+
+### 0.9 Drizzle `relations.ts`의 역할
+`relations.ts`는 FK를 생성하는 파일이 아니라, **타입 안전한 join / eager loading**을 위한 관계 선언 레이어입니다.
+
+- FK 제약: 각 테이블의 `references(() => ...)`에서 결정
+- 관계 그래프(조회 편의): `relations()`로 선언
+
+권장 패턴
+- “상세 화면”에서 필요한 join은 `relations.ts`를 기반으로 한 **단일 쿼리(또는 소수 쿼리)** 로 정리
+- 민감 정보(예: `users.password`)는 join 결과에 섞이지 않도록 **select projection**을 항상 명시
 
 ---
 
