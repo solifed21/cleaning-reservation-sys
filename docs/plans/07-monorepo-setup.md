@@ -1,12 +1,12 @@
 # Plan 07 - Monorepo Setup (pnpm workspace + Turborepo)
 
 - Status: ✅ 완료
-- Version: v8
+- Version: v9
 - Last updated: 2026-02-11
 
 > 목표: **pnpm workspace + Turborepo** 기반으로
 > `apps/mobile`, `apps/web`, `packages/shared`, `packages/ui`를 한 레포에서
-> **일관된 스크립트/빌드/타입체크/린트** 규약으로 관리할 수 있는 모노레포 구조/설정을 설계한다.
+> **일관된 스크립트/빌드/타입체크/린트** 규약으로 관리할 수 있는 모노레포 구조/설정을 정의한다.
 >
 > 범위: **설계 문서** (스캐폴딩/실제 파일 생성은 별도 태스크)
 
@@ -19,16 +19,16 @@
 
 ---
 
-## 0) TL;DR
+## 0) TL;DR (의사결정 요약)
 
-- `packages/shared` = 도메인 타입/DTO/Zod/유틸(비-UI) 공용 레이어 (**플랫폼 독립**)
+- `packages/shared` = **플랫폼 독립**(node/web/mobile) 도메인 타입/DTO/Zod/유틸
 - `packages/ui` = **웹 우선** 공용 UI 라이브러리(React + Tailwind)
-  - RN까지 단일 `ui`로 억지 통합하면(번들러/스타일/플랫폼 차이) 난이도가 급상승 → 본 플랜에서는 웹 우선으로 고정
-  - 모바일 UI 공유가 필요해지면 `packages/ui-native` 또는 `packages/ui-core`(headless)로 **추가 분리** 전략 권장
-- 모든 워크스페이스는 동일한 task 이름 규약을 갖는다: `dev/build/typecheck/lint/test/clean`
-- 루트에서는 항상 `turbo run <task>`로 통제한다.
-- 워크스페이스 의존성은 `workspace:*`로 연결한다.
-- Expo(모바일) + pnpm workspace는 Metro 이슈가 잦으므로:
+  - RN까지 단일 UI 패키지로 억지 통합(스타일/번들러/플랫폼 차이)은 난이도 급상승
+  - 모바일 UI 공유가 필요해지면 `packages/ui-native` 또는 `packages/ui-core(headless)`를 **추가 분리**한다.
+- 모든 워크스페이스 공통 스크립트 규약: `dev/build/typecheck/lint/test/clean`
+- 루트에서는 `turbo run <task>`로만 통제한다.
+- 워크스페이스 의존성 연결은 `workspace:*` 사용
+- Expo + pnpm workspace는 Metro 이슈가 잦으므로:
   - 기본값은 **`@crs/shared`를 dist(빌드 산출물) 기반으로 소비**
   - 필요 시 `apps/mobile/metro.config.js` 보강
 
@@ -113,10 +113,10 @@ packages:
   - "tooling/*"
 ```
 
-### 3.2 루트 `package.json`
+### 3.2 루트 `package.json` (표준 스크립트/DevDeps)
 
 핵심:
-- 루트에서는 항상 Turbo로 실행한다.
+- 루트는 **Turbo로만 실행**한다.
 - 패키지 단위 실행은 `pnpm --filter <name>`로만 한다.
 
 ```jsonc
@@ -159,11 +159,11 @@ strict-peer-dependencies=true
 - Expo/RN 환경에서 peer dep가 자주 충돌하면 **일시적으로** `strict-peer-dependencies=false`로 완화할 수 있으나,
   안정화 후 다시 true로 복구하는 것을 권장한다.
 
-### 3.4 `turbo.json` (pipeline)
+### 3.4 `turbo.json` (파이프라인)
 
 설계 포인트:
 - `build`는 항상 의존성부터(`^build`) 빌드
-- 모바일이 `shared`의 dist를 소비하는 전략에서는 `typecheck`도 종종 `build` 후 수행이 안전
+- Expo가 `shared`의 dist를 소비하는 전략에서는 `typecheck`도 종종 `build` 후 수행이 안전
 
 ```jsonc
 {
@@ -200,7 +200,7 @@ strict-peer-dependencies=true
 }
 ```
 
-> 참고: 실제 outputs는 스캐폴딩 결과(특히 TanStack Start/Expo)에 맞춰 조정한다.
+> 실제 outputs는 스캐폴딩 결과(특히 TanStack Start/Expo)에 맞춰 조정한다.
 
 ### 3.5 `.gitignore` (핵심)
 
@@ -327,7 +327,7 @@ module.exports = {
 
 ## 5) 공통 설정 패키지: `tooling/eslint-config`
 
-> ESLint v9 기준: **flat config** 권장.
+> ESLint v9 기준: **flat config** 사용.
 
 ### 5.1 `tooling/eslint-config/package.json` (예시)
 
@@ -386,7 +386,7 @@ packages/shared/
 ### 6.2 `packages/shared/package.json` (권장)
 
 핵심:
-- Expo가 안정적으로 소비할 수 있도록 `dist` export를 명확히 한다.
+- Expo가 안정적으로 소비할 수 있도록 **dist export를 명확히** 한다.
 
 ```jsonc
 {
@@ -520,7 +520,7 @@ packages/ui/
 }
 ```
 
-> 옵션: UI 패키지는 `tsc`만으로도 가능하지만, CSS/번들링이 필요해지면 `tsup`/`rollup` 도입을 고려한다.
+> 옵션: UI 패키지에서 CSS/번들링이 필요해지면 `tsup`/`rollup` 도입을 고려한다.
 
 ### 7.3 `packages/ui/tsconfig.json`
 

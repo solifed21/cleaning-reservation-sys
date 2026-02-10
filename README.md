@@ -26,7 +26,8 @@ cleaning-reservation-sys/
 │               └── migrations/  # DB 마이그레이션
 ├── packages/
 │   ├── shared/          # 공유 타입, 유틸리티
-│   └── ui/              # 공유 UI 컴포넌트
+│   └── ui/              # 공유 UI 컴포넌트(웹 우선)
+├── tooling/             # (권장) 설정 공유 패키지(tsconfig/eslint-config)
 ├── docs/
 │   └── plans/           # 설계 문서
 └── README.md
@@ -100,7 +101,7 @@ pnpm drizzle-kit push
 | 04 | [모바일 앱 화면 설계](docs/plans/04-mobile-screens.md) | ✅ 완료 (v3, 2026-02-11) |
 | 05 | [웹 대시보드 설계](docs/plans/05-web-dashboard.md) | ✅ 완료 |
 | 06 | [UI/UX 테마 & 디자인 시스템](docs/plans/06-ui-theme.md) | ✅ 완료 (v8, 2026-02-11) |
-| 07 | [모노레포 설계](docs/plans/07-monorepo-setup.md) | ✅ 완료 (v8, 2026-02-11) |
+| 07 | [모노레포 설계](docs/plans/07-monorepo-setup.md) | ✅ 완료 (v9, 2026-02-11) |
 
 ## License
 
