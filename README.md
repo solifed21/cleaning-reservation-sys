@@ -35,7 +35,7 @@ cleaning-reservation-sys/
 | 03 | [API 엔드포인트](docs/plans/03-api-endpoints.md) | ✅ 완료 |
 | 04 | [모바일 앱 화면 설계](docs/plans/04-mobile-screens.md) | ✅ 완료 |
 | 05 | [웹 대시보드 설계](docs/plans/05-web-dashboard.md) | ✅ 완료 |
-| 06 | UI/UX 테마 & 디자인 시스템 | ⏳ 대기 |
+| 06 | [UI/UX 테마 & 디자인 시스템](docs/plans/06-ui-theme.md) | ✅ 완료 |
 | 07 | [모노레포 설계](docs/plans/07-monorepo-setup.md) | ✅ 완료 |
 
 ## License
