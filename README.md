@@ -4,9 +4,10 @@
 
 ## Tech Stack
 
-- **Mobile**: Expo React Native
+- **Mobile**: Expo React Native (Expo Router)
 - **Web**: TanStack Start + React
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS + NativeWind
+- **State**: TanStack Query
 - **Backend**: TanStack Start (Full-stack)
 - **Database**: PostgreSQL (Neon/Supabase)
 - **ORM**: Drizzle ORM
@@ -16,12 +17,13 @@
 ```
 cleaning-reservation-sys/
 ├── apps/
-│   ├── mobile/          # Expo React Native 앱
+│   ├── mobile/          # (예정) Expo React Native 앱 (Expo Router)
+│   │   └── app/         # (예정) 라우트 그룹: (auth)/(customer)/(cleaner)/(shared)
 │   └── web/             # TanStack Start 웹 + API
 │       └── server/
 │           └── db/
-│               ├── schema/    # Drizzle ORM 스키마
-│               └── migrations/ # DB 마이그레이션
+│               ├── schema/      # Drizzle ORM 스키마
+│               └── migrations/  # DB 마이그레이션
 ├── packages/
 │   ├── shared/          # 공유 타입, 유틸리티
 │   └── ui/              # 공유 UI 컴포넌트
@@ -30,9 +32,19 @@ cleaning-reservation-sys/
 └── README.md
 ```
 
+- 모바일 앱의 화면/라우팅 설계는 `docs/plans/04-mobile-screens.md`를 기준으로 구현합니다.
+  - Expo Router 라우트 그룹: `(auth)`, `(customer)`, `(cleaner)`, `(shared)`
+  - `index.tsx`에서 **Auth Gate(세션/role 기반 redirect)**
+  - 역할별 **Tabs + Stack** 혼합 구조, 공통 화면(예약상세/채팅/리뷰/설정)은 `(shared)`로 재사용
+  - 컴포넌트/feature/lib/store 권장 폴더 구조 포함
+  - (용어) DB(02)=`bookings`, API(03)=`reservations` → 문서에서 reservation(=booking) 병기
+
 ## Database Schema
 
 Drizzle ORM 기반 타입 안전 데이터베이스 설계
+
+- 상세 설계/ERD: `docs/plans/02-db-schema.md`
+- 용어: 구현은 `bookings`, API 문서(03)는 `reservations`(=bookings)로 표기
 
 ### 주요 테이블
 
