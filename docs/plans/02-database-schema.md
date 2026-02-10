@@ -6,7 +6,7 @@ PostgreSQL(Neon/Supabase) + Drizzle ORM 기반의 데이터 모델 설계 문서
 - 대상: C2C 청소 예약(요청자/제공자), 예약 기반 메시지, 리뷰, 알림
 - 설계 목표: **타입 안전성**, **정합성(제약/ENUM/관계)**, **MVP에 과하지 않은 확장성**
 - 기준 스키마: `apps/web/server/db/schema/*.ts`
-- 문서 버전: **v4 (2026-02-11)**
+- 문서 버전: **v5 (2026-02-11)**
 
 ---
 
@@ -38,12 +38,24 @@ PostgreSQL(Neon/Supabase) + Drizzle ORM 기반의 데이터 모델 설계 문서
 > 참고: 현재 `service_type`, `review_tag`는 enum이 **정의는 되어있지만**, 실제 컬럼(`services`, `tags`) 타입은 `text[]` 입니다.
 > 따라서 DB 차원에서 배열 원소가 enum에 속하는지까지는 강제하지 못하고, **서버 액션에서 값 검증**을 합니다.
 
-### 0.4 Soft delete
+
+### 0.4 Timezone / 날짜-시간 모델
+- `scheduled_date`(date) + `scheduled_time`(time) 조합은 **로컬(한국) 기준** 스케줄을 표현하는 MVP 선택입니다.
+  - 장점: “날짜/시간” UI 입력과 직관적으로 1:1 매핑
+  - 주의: 서버/DB가 UTC로 저장하는 `timestamp`와 성격이 다르므로, API/클라이언트에서 **KST 기준으로만 해석**하도록 규칙을 고정합니다.
+- `created_at`, `updated_at`, `completed_at` 등 `timestamp`는 “이벤트가 발생한 시각” 기록으로 사용합니다.
+
+> Post-MVP로 다국적/타임존 지원이 필요해지면 `scheduled_at (timestamptz)`로 마이그레이션하고,
+> 지역/타임존을 별도 컬럼으로 보강하는 편이 안전합니다.
+
+
+
+### 0.5 Soft delete
 - MVP에서는 soft delete를 기본 채택하지 않음
   - 사유: 로직/인덱스/필터 복잡도 증가
   - 필요 시: `deleted_at` 컬럼 추가 + 조회 스코프 표준화로 확장
 
-### 0.5 “배열 컬럼 vs 조인 테이블” 원칙
+### 0.6 “배열 컬럼 vs 조인 테이블” 원칙
 MVP에서 “선택 목록” 성격이고 **조회가 단순**한 항목은 `text[]`를 사용합니다.
 
 - `bookings.services: text[]`
