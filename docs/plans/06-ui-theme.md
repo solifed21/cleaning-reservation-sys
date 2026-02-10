@@ -1,6 +1,6 @@
 # Plan 06: UI/UX 테마 & 디자인 시스템
 
-- 문서 버전: **v6**
+- 문서 버전: **v7**
 - 마지막 업데이트: **2026-02-11**
 
 본 문서는 **청소 예약 서비스**에 어울리는 “깔끔함(청결)”과 “신뢰감(전문성)”을 중심으로, Web(TanStack Start) + Mobile(Expo React Native)에서 **동일한 토큰/규칙/컴포넌트 언어**로 구현하기 위한 **UI/UX 테마 및 디자인 시스템**을 정의합니다.
@@ -68,12 +68,23 @@
 - “컴포넌트 전용 토큰”은 최후의 수단
   - `button.primary.bg` 같은 파편화 지양 → `brand.primary` + 컴포넌트 variant로 해결
 
+### 2.1.1 토큰 거버넌스(팀 규칙)
+- 토큰 변경은 “의미 변화”로 간주 → PR에 **스크린샷 2장(전/후)** 첨부
+- 새 색을 추가해야 한다면, 먼저 아래 중 어디에 속하는지 결정
+  1) **Brand**(CTA/링크) 2) **Neutral/Surface**(배경/구조) 3) **Semantic Status**(성공/경고/위험/정보)
+- 의미가 불명확한 색(예: `purple.500`)은 금지. 꼭 필요하면 `status.*` 또는 `brand.*`로만 도입
+- “한 화면에 의미 없는 컬러 2개 이상”이 보이면 디자인 실패로 본다
+
 ### 2.2 Color Tokens (Light) — 기본
 
 #### Brand
 - `brand.primary`: **#2563EB** (Blue 600) — 핵심 CTA/링크
 - `brand.primaryHover`: #1D4ED8 (Blue 700)
 - `brand.primarySoft`: #EFF6FF (Blue 50)
+
+보조 팔레트(옵션, 필요할 때만)
+- `brand.primaryStrong`: #1E40AF (Blue 800) — 헤더/강조(남용 금지)
+- `brand.accent`: #0EA5E9 (Sky 500) — 정보 강조(상태/info와 구분이 필요할 때만)
 
 #### Neutral / Surface
 - `bg.default`: #FFFFFF
@@ -233,6 +244,33 @@ export const tokens = {
 ---
 
 ## 4) 컴포넌트 시스템 (packages/ui 기준)
+
+> 목표: 화면을 “그때그때 디자인”하지 않고, **예약 서비스에 필요한 UI 원형들을 조합**해서 만든다.
+
+### 4.0 컴포넌트 인벤토리(우선순위)
+**Core(필수)**
+- Button, IconButton
+- Text, Heading
+- Input, TextArea, Field(라벨/헬퍼/에러), FormRow
+- Select(단일), SegmentedControl
+- Card
+- Badge(상태), Chip(필터)
+- Divider
+- Toast/Snackbar
+- Modal(Dialog), BottomSheet
+- Skeleton, EmptyState
+- Avatar(제공자), RatingStars
+
+**Domain(예약/청소 전용)**
+- BookingStatusBadge
+- PriceBreakdown(항목/합계)
+- BookingTimeline(상태 타임라인)
+- AddressBlock(주소 표준 표시)
+- CleanerSummaryCard(평점/후기/지역)
+
+**Navigation(앱 공통)**
+- TopBar(AppBar), Tabs, BottomTabs
+- ListItem(예약/일감)
 
 > 공통 원칙
 > - 로딩 시 레이아웃 점프 금지(버튼 너비/높이 고정)
