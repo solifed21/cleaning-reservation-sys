@@ -1,7 +1,7 @@
 # Plan 07 - Monorepo Setup (pnpm workspace + Turborepo)
 
 - Status: ✅ 완료
-- Version: v7
+- Version: v8
 - Last updated: 2026-02-11
 
 > 목표: **pnpm workspace + Turborepo** 기반으로
@@ -19,15 +19,15 @@
 
 ---
 
-## 0) TL;DR (결론)
+## 0) TL;DR
 
-- `packages/shared` = **도메인 타입/DTO/Zod/유틸(비-UI)** 공용 레이어 (플랫폼 독립)
+- `packages/shared` = 도메인 타입/DTO/Zod/유틸(비-UI) 공용 레이어 (**플랫폼 독립**)
 - `packages/ui` = **웹 우선** 공용 UI 라이브러리(React + Tailwind)
-  - RN까지 단일 `ui`로 억지 통합하면(번들러/스타일/플랫폼 차이) 난이도가 급상승하므로 **웹 우선으로 고정**
-  - 모바일 UI 공유가 필요해지면 `packages/ui-native` 또는 `packages/ui-core`(headless)로 **추가 분리**하는 전략 권장
+  - RN까지 단일 `ui`로 억지 통합하면(번들러/스타일/플랫폼 차이) 난이도가 급상승 → 본 플랜에서는 웹 우선으로 고정
+  - 모바일 UI 공유가 필요해지면 `packages/ui-native` 또는 `packages/ui-core`(headless)로 **추가 분리** 전략 권장
 - 모든 워크스페이스는 동일한 task 이름 규약을 갖는다: `dev/build/typecheck/lint/test/clean`
 - 루트에서는 항상 `turbo run <task>`로 통제한다.
-- 워크스페이스 의존성은 `workspace:*`(workspace protocol)로 연결한다.
+- 워크스페이스 의존성은 `workspace:*`로 연결한다.
 - Expo(모바일) + pnpm workspace는 Metro 이슈가 잦으므로:
   - 기본값은 **`@crs/shared`를 dist(빌드 산출물) 기반으로 소비**
   - 필요 시 `apps/mobile/metro.config.js` 보강
@@ -67,7 +67,7 @@ cleaning-reservation-sys/
 
 ## 2) 패키지 역할/의존성 관계
 
-### 2.1 패키지 역할
+### 2.1 역할
 
 - `@crs/shared`
   - 도메인 타입, API DTO, Zod schema, 공용 유틸(date/money/validation 등)
@@ -116,7 +116,7 @@ packages:
 ### 3.2 루트 `package.json`
 
 핵심:
-- **루트에서는 항상 Turbo**로 실행한다.
+- 루트에서는 항상 Turbo로 실행한다.
 - 패키지 단위 실행은 `pnpm --filter <name>`로만 한다.
 
 ```jsonc
@@ -145,8 +145,6 @@ packages:
 }
 ```
 
-> 참고: `turbo`의 정확한 버전은 도입 시점에 맞춰 확정한다.
-
 ### 3.3 `.npmrc` (권장)
 
 ```ini
@@ -158,7 +156,7 @@ shared-workspace-lockfile=true
 strict-peer-dependencies=true
 ```
 
-- Expo/RN 환경에서 peer dep가 매우 자주 충돌하면 **일시적으로** `strict-peer-dependencies=false`로 완화할 수 있으나,
+- Expo/RN 환경에서 peer dep가 자주 충돌하면 **일시적으로** `strict-peer-dependencies=false`로 완화할 수 있으나,
   안정화 후 다시 true로 복구하는 것을 권장한다.
 
 ### 3.4 `turbo.json` (pipeline)
@@ -201,6 +199,8 @@ strict-peer-dependencies=true
   }
 }
 ```
+
+> 참고: 실제 outputs는 스캐폴딩 결과(특히 TanStack Start/Expo)에 맞춰 조정한다.
 
 ### 3.5 `.gitignore` (핵심)
 
@@ -298,7 +298,7 @@ module.exports = {
 }
 ```
 
-`tooling/tsconfig/react-library.json` (예시)
+`tooling/tsconfig/react-library.json`
 
 ```jsonc
 {
@@ -310,7 +310,7 @@ module.exports = {
 }
 ```
 
-`tooling/tsconfig/app.json` (예시)
+`tooling/tsconfig/app.json`
 
 ```jsonc
 {
@@ -386,7 +386,7 @@ packages/shared/
 ### 6.2 `packages/shared/package.json` (권장)
 
 핵심:
-- **Expo가 안정적으로 소비**할 수 있도록 `dist` export를 명확히 한다.
+- Expo가 안정적으로 소비할 수 있도록 `dist` export를 명확히 한다.
 
 ```jsonc
 {
