@@ -1,10 +1,12 @@
 # Plan 07 - Monorepo Setup (pnpm workspace + Turborepo)
 
 > 목표: **pnpm workspace + Turborepo** 기반으로
-> `apps/mobile`, `apps/web`, `packages/shared`, `packages/ui` 를 한 레포에서 일관되게 개발/빌드/테스트/배포할 수 있도록 모노레포를 설계한다.
+> `apps/mobile`, `apps/web`, `packages/shared`, `packages/ui` 를 한 레포에서 일관되게 개발/빌드/타입체크/린트할 수 있도록 모노레포를 설계한다.
+>
+> 범위: **모노레포 “설계 문서”** (스캐폴딩/실제 생성은 별도 플랜/태스크로 수행)
 
 - Package manager: **pnpm**
-- Task runner / cache: **Turborepo**
+- Task runner / Remote cache ready: **Turborepo**
 - Language: **TypeScript**
 - Web: **TanStack Start + React**
 - Mobile: **Expo (React Native, Expo Router)**
@@ -12,13 +14,16 @@
 
 ---
 
-## 0) TL;DR
+## 0) TL;DR (결론)
 
-- `packages/shared` = 도메인 타입/DTO/Zod/유틸(비-UI) 공용 레이어
-- `packages/ui` = **웹 중심** 공용 UI 라이브러리(Tailwind 기반)
-  - 모바일 UI 공유는 초기엔 무리하지 말고(번들러/스타일/플랫폼 차이), 필요 시 `packages/ui-native` 분리로 확장
-- 모든 워크스페이스 패키지는 동일한 스크립트 규약(`dev/build/typecheck/lint/test/clean`)을 가진다.
+- `packages/shared` = **도메인 타입/DTO/Zod/유틸**(비-UI) 공용 레이어 (모바일/웹/서버 공통)
+- `packages/ui` = **웹 우선** 공용 UI 라이브러리(React + Tailwind)
+  - 모바일 UI까지 한 패키지로 억지 공유하지 말고(번들러/스타일/플랫폼 차이), 필요 시 `packages/ui-native` 로 분리 확장
+- 모든 워크스페이스는 동일한 task 이름 규약(`dev/build/typecheck/lint/test/clean`)을 가진다.
 - 루트에서는 `turbo run <task>` 로 전체를 통제하고, 워크스페이스 의존성은 **workspace protocol**(`workspace:*`)로 연결한다.
+- Expo(모바일)는 pnpm symlink + Metro 해석 문제가 잦으므로:
+  - **기본값은 `@crs/shared` 를 dist 산출물 기반으로 소비**(빌드된 JS/types)
+  - 필요 시 Metro 설정으로 workspace watch/resolver를 보강한다.
 
 ---
 
@@ -30,11 +35,11 @@ cleaning-reservation-sys/
 │   ├── mobile/                  # Expo RN + Expo Router
 │   └── web/                     # TanStack Start (web + server)
 ├── packages/
-│   ├── shared/                  # 타입/DTO/Zod/유틸
+│   ├── shared/                  # 타입/DTO/Zod/유틸 (플랫폼 독립)
 │   └── ui/                      # 공용 UI (웹 우선)
 ├── tooling/                     # (권장) 설정 공유 패키지
-│   ├── eslint-config/
-│   └── tsconfig/
+│   ├── eslint-config/           # 공통 eslint preset (flat config)
+│   └── tsconfig/                # 공통 tsconfig preset
 ├── docs/
 │   └── plans/
 ├── package.json                 # 루트 스크립트 + dev deps
@@ -42,13 +47,15 @@ cleaning-reservation-sys/
 ├── turbo.json
 ├── .npmrc
 ├── .gitignore
+├── .editorconfig                # (권장)
+├── prettier.config.cjs          # (권장)
 └── README.md
 ```
 
 ### 왜 `tooling/*` 가 필요한가?
 
-- `tsconfig.json`, eslint preset 등을 **복사/붙여넣기**로 관리하면 패키지 수가 늘수록 유지보수가 힘들어진다.
-- `tooling/tsconfig`, `tooling/eslint-config` 를 만들면 각 패키지는 `extends` / `devDependencies` 만으로 일관된 규칙을 공유할 수 있다.
+- `tsconfig.json`, eslint 설정을 **복사/붙여넣기**로 관리하면 패키지 수가 늘수록 유지보수가 급격히 어려워진다.
+- `tooling/tsconfig`, `tooling/eslint-config` 로 preset을 패키지화하면, 각 워크스페이스는 `extends` / `devDependencies` 만으로 규칙을 공유할 수 있다.
 
 ---
 
@@ -57,19 +64,19 @@ cleaning-reservation-sys/
 ### 2.1 역할
 
 - `@crs/shared`
-  - 도메인 타입, API DTO, Zod schema, date/money 등 util
-  - **플랫폼 독립**(node/web/mobile 어디서든 동작)
+  - 도메인 타입, API DTO, Zod schema, 공용 유틸(date/money/validation 등)
+  - **플랫폼 독립** (node/web/mobile 어디서든 동작)
 - `@crs/ui`
-  - 웹용 UI 컴포넌트(버튼/폼/모달/토큰)
-  - Tailwind preset, className 유틸
+  - 웹용 UI 컴포넌트(버튼/입력/모달/토큰), Tailwind preset, className 유틸
+  - 원칙적으로 `@crs/shared` 만 의존
 - `@crs/web`
   - TanStack Start 기반 웹 + 서버 API(Full-stack)
   - `@crs/shared`/`@crs/ui` 사용
 - `@crs/mobile`
   - Expo Router 기반 RN 앱
-  - **초기엔 `@crs/shared`만** 사용(모바일 UI 공유는 추후)
+  - **초기에는 `@crs/shared`만** 사용(모바일 UI 공유는 추후)
 
-### 2.2 의존성 그래프
+### 2.2 의존성 그래프 (원칙)
 
 ```txt
 @crs/shared (lib)
@@ -83,7 +90,7 @@ cleaning-reservation-sys/
 
 원칙:
 - `shared` 는 가장 하위 레이어(최소 의존)
-- `ui` 는 가능하면 `shared` 에만 의존
+- `ui` 는 가능한 `shared` 에만 의존
 - 앱(`web`, `mobile`)은 `shared`/`ui` 를 소비
 
 ---
@@ -99,7 +106,7 @@ packages:
   - "tooling/*"
 ```
 
-### 3.2 루트 `package.json` (예시)
+### 3.2 루트 `package.json` (권장 스크립트 규약)
 
 ```jsonc
 {
@@ -115,6 +122,7 @@ packages:
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "test": "turbo run test",
+
     "clean": "turbo run clean && rimraf node_modules",
     "format": "prettier -w ."
   },
@@ -126,7 +134,9 @@ packages:
 }
 ```
 
-> `pnpm -w <cmd>` 대신, 팀 규약으로 **루트에서 스크립트만 실행**하는 편이 실수(다른 폴더에서 실행)를 줄여준다.
+규칙:
+- 팀 규약으로 **루트에서만** `pnpm dev/build/...` 를 실행하는 습관을 강제한다.
+- 개별 패키지 실행은 `pnpm --filter ...` 로만 한다.
 
 ### 3.3 `.npmrc` (권장)
 
@@ -140,6 +150,9 @@ strict-peer-dependencies=true
 # 모노레포는 루트 lockfile 1개
 shared-workspace-lockfile=true
 ```
+
+> Expo/React Native 쪽은 환경에 따라 `strict-peer-dependencies=true` 가 초기에 빡셀 수 있다.
+> 충돌이 잦다면 **일시적으로** false 로 낮추되, 안정화 후 다시 true 로 복구하는 것을 권장한다.
 
 ### 3.4 `turbo.json` (파이프라인)
 
@@ -178,11 +191,53 @@ shared-workspace-lockfile=true
 }
 ```
 
-> 산출물 폴더는 실제 앱 생성 후 조정한다. Turbo에서 가장 중요한 건 **의존성 그래프(^build) + 캐시 키**를 안정적으로 잡는 것.
+의도:
+- `build` 는 항상 하위 의존성(`^build`)부터 빌드한다.
+- `typecheck` 는 빌드가 필요한 패키지(특히 dist 기반 소비)가 있으므로 `^build` 뒤에 수행한다.
+
+### 3.5 `.gitignore` (핵심 포인트)
+
+```gitignore
+# deps
+node_modules
+
+# builds
+dist
+build
+
+# turbo
+.turbo
+
+# web
+.tanstack
+.next
+
+# expo
+.expo
+.expo-shared
+*.jks
+
+# misc
+.DS_Store
+.env
+.env.*
+```
+
+### 3.6 `prettier.config.cjs` (권장)
+
+```js
+/** @type {import('prettier').Config} */
+module.exports = {
+  semi: false,
+  singleQuote: true,
+  trailingComma: 'all',
+  printWidth: 100,
+}
+```
 
 ---
 
-## 4) `tooling/tsconfig` (공통 TS preset)
+## 4) 공통 설정 패키지: `tooling/tsconfig`
 
 ### 4.1 `tooling/tsconfig/package.json`
 
@@ -196,11 +251,12 @@ shared-workspace-lockfile=true
 }
 ```
 
-### 4.2 preset 예시
+### 4.2 preset 파일(권장)
 
-- `tooling/tsconfig/base.json` (공통)
-- `tooling/tsconfig/react-library.json` (UI 라이브러리)
-- `tooling/tsconfig/react-native.json` (모바일)
+- `tooling/tsconfig/base.json` (모든 패키지 공통)
+- `tooling/tsconfig/library.json` (공유 라이브러리 빌드용)
+- `tooling/tsconfig/react-library.json` (React UI 라이브러리)
+- `tooling/tsconfig/app.json` (앱 공통)
 
 `tooling/tsconfig/base.json`
 
@@ -217,9 +273,17 @@ shared-workspace-lockfile=true
     "forceConsistentCasingInFileNames": true,
 
     "resolveJsonModule": true,
-    "esModuleInterop": true,
+    "esModuleInterop": true
+  }
+}
+```
 
-    // 라이브러리 패키지들이 dist를 만들 수 있게 기본값은 emit 허용
+`tooling/tsconfig/library.json`
+
+```jsonc
+{
+  "extends": "./base.json",
+  "compilerOptions": {
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -230,7 +294,9 @@ shared-workspace-lockfile=true
 
 ---
 
-## 5) `tooling/eslint-config` (공통 ESLint preset)
+## 5) 공통 설정 패키지: `tooling/eslint-config`
+
+> ESLint v9 기준: **flat config** 를 권장한다.
 
 ### 5.1 `tooling/eslint-config/package.json` (예시)
 
@@ -239,7 +305,7 @@ shared-workspace-lockfile=true
   "name": "@crs/eslint-config",
   "version": "0.0.0",
   "private": true,
-  "main": "index.cjs",
+  "main": "index.js",
   "license": "MIT",
   "dependencies": {
     "@eslint/js": "^9.0.0",
@@ -249,7 +315,22 @@ shared-workspace-lockfile=true
 }
 ```
 
-> 실제 룰셋은 프로젝트 합의에 따라 확정. 중요한 건 **preset을 패키지로 뽑아서** 모든 워크스페이스가 같은 기준을 쓰게 하는 것.
+### 5.2 `tooling/eslint-config/index.js` (개념 예시)
+
+```js
+import js from '@eslint/js'
+import tseslint from 'typescript-eslint'
+
+export default [
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    rules: {
+      'no-console': 'off'
+    }
+  }
+]
+```
 
 ---
 
@@ -266,10 +347,11 @@ packages/shared/
 │   ├── schema/         # zod schemas
 │   └── utils/
 ├── tsconfig.json
+├── eslint.config.js
 └── package.json
 ```
 
-### 6.2 `packages/shared/package.json` (예시)
+### 6.2 `packages/shared/package.json` (권장)
 
 ```jsonc
 {
@@ -307,11 +389,11 @@ packages/shared/
 }
 ```
 
-### 6.3 `packages/shared/tsconfig.json` (예시)
+### 6.3 `packages/shared/tsconfig.json`
 
 ```jsonc
 {
-  "extends": "@crs/tsconfig/base.json",
+  "extends": "@crs/tsconfig/library.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src"
@@ -320,7 +402,21 @@ packages/shared/
 }
 ```
 
-> `shared` 는 모바일에서도 소비해야 하므로, **dist 산출물 기반 소비**(빌드된 JS+types)를 기본값으로 한다.
+### 6.4 `packages/shared/eslint.config.js`
+
+```js
+import base from '@crs/eslint-config'
+
+export default [
+  ...base,
+  {
+    ignores: ['dist/**']
+  }
+]
+```
+
+설계 포인트:
+- `shared` 는 모바일에서도 소비하므로, **dist 산출물 기반 소비**가 가장 안전하다.
 
 ---
 
@@ -335,12 +431,13 @@ packages/ui/
 │   ├── components/
 │   └── styles/
 ├── tsconfig.json
+├── eslint.config.js
 ├── tailwind.config.ts
 ├── postcss.config.cjs
 └── package.json
 ```
 
-### 7.2 `packages/ui/package.json` (예시)
+### 7.2 `packages/ui/package.json` (권장)
 
 ```jsonc
 {
@@ -374,6 +471,7 @@ packages/ui/
     "react-dom": ">=18"
   },
   "devDependencies": {
+    "@crs/shared": "workspace:*",
     "@crs/tsconfig": "workspace:*",
     "@crs/eslint-config": "workspace:*",
     "typescript": "^5.7.0",
@@ -386,7 +484,9 @@ packages/ui/
 }
 ```
 
-> `@crs/ui` 가 `react` 를 dependencies에 넣으면 앱과 중복 설치될 수 있어, 일반적으로 `peerDependencies` 가 맞다(라이브러리 관점).
+설계 포인트:
+- `@crs/ui` 는 라이브러리이므로 `react` 는 보통 `peerDependencies` 가 맞다(앱이 실제 React를 제공).
+- `@crs/ui` 가 `@crs/shared` 를 쓰면, `devDependencies` + 소스 import로도 충분하지만(로컬 개발), dist 소비 체계를 유지하면 더 안정적이다.
 
 ---
 
@@ -407,6 +507,7 @@ packages/ui/
     "dev": "tanstack start dev",
     "build": "tanstack start build",
     "start": "tanstack start start",
+
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "echo 'no tests yet'",
@@ -421,7 +522,12 @@ packages/ui/
 }
 ```
 
-> TanStack Start 관련 실제 패키지/CLI명은 프로젝트 스캐폴딩 결과에 맞춰 조정한다.
+> TanStack Start의 실제 CLI/패키지명은 스캐폴딩 결과에 맞춰 조정한다.
+
+### 8.3 웹(Tailwind)에서 `@crs/ui` 사용 시 주의점
+
+- Tailwind content scan 경로에 `../../packages/ui/src/**/*.{ts,tsx}` 를 반드시 포함해야, UI 패키지의 클래스가 purge 되지 않는다.
+- 가능하면 `@crs/ui` 쪽에 Tailwind preset을 만들고, `apps/web/tailwind.config.ts` 에서 preset을 consume 한다.
 
 ---
 
@@ -443,6 +549,7 @@ packages/ui/
     "android": "expo run:android",
     "ios": "expo run:ios",
     "build": "expo export",
+
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "echo 'no tests yet'",
@@ -459,12 +566,14 @@ packages/ui/
 
 ### 9.3 Expo + pnpm workspace에서 자주 발생하는 이슈와 기본 대응
 
-- Metro가 workspace symlink 모듈을 해석하지 못하는 케이스가 있다.
-- 해결 전략은 크게 2가지:
-  1) `@crs/shared` 를 **빌드 산출물(dist)** 로 소비하도록 유지(이 플랜의 기본)
-  2) 또는 Metro 설정에서 workspace 폴더를 watch/resolver에 추가
+문제:
+- Metro가 workspace symlink 모듈을 해석하지 못하거나, 감시(watch)가 안 되어 변경 반영이 늦는 이슈가 발생할 수 있다.
 
-#### (참고 예시) `apps/mobile/metro.config.js`
+기본 전략(우선순위):
+1) `@crs/shared` 를 **빌드 산출물(dist)** 로 소비하도록 유지 (이 플랜 기본값)
+2) 그래도 문제가 있으면 Metro 설정에서 workspace 폴더를 watch/resolver에 추가
+
+#### (참고) `apps/mobile/metro.config.js` 예시
 
 ```js
 const path = require('path')
@@ -486,8 +595,6 @@ config.resolver.nodeModulesPaths = [
 
 module.exports = config
 ```
-
-> 실제로는 NativeWind, Expo SDK, RN 버전에 따라 조정이 필요할 수 있다. 핵심은 “모노레포에서 mobile이 shared를 안정적으로 가져온다”는 목표를 config로 보장하는 것.
 
 ---
 
@@ -513,15 +620,15 @@ pnpm lint
 
 ---
 
-## 11) 도입 순서(implementation order)
+## 11) 도입 순서(Implementation Order)
 
-1. 루트: `pnpm-workspace.yaml`, `turbo.json`, `.npmrc`, 루트 `package.json` 확정
+1. 루트: `pnpm-workspace.yaml`, `turbo.json`, `.npmrc`, 루트 `package.json`, prettier/eslint 기본 규약 확정
 2. `tooling/tsconfig`, `tooling/eslint-config` 생성
 3. `packages/shared` 생성 + `pnpm --filter @crs/shared build` 성공
 4. `packages/ui` 생성 + `apps/web` 에서 import 성공
 5. `apps/web` TanStack Start 스캐폴딩 + workspace deps 연결
-6. `apps/mobile` Expo 스캐폴딩 + `@crs/shared` import 성공(필요 시 metro 설정)
-7. 루트에서 `pnpm build` / `pnpm typecheck` 가 전체 성공하는지 확인
+6. `apps/mobile` Expo 스캐폴딩 + `@crs/shared` import 성공 (필요 시 metro 설정)
+7. 루트에서 `pnpm build` / `pnpm typecheck` / `pnpm lint` 가 전체 성공하는지 확인
 
 ---
 
@@ -540,4 +647,5 @@ pnpm --filter @crs/mobile dev
 
 # 특정 패키지 빌드
 pnpm --filter @crs/shared build
+pnpm --filter @crs/ui build
 ```

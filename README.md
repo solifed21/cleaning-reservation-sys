@@ -100,7 +100,7 @@ pnpm drizzle-kit push
 | 04 | [모바일 앱 화면 설계](docs/plans/04-mobile-screens.md) | ✅ 완료 (v3, 2026-02-11) |
 | 05 | [웹 대시보드 설계](docs/plans/05-web-dashboard.md) | ✅ 완료 |
 | 06 | [UI/UX 테마 & 디자인 시스템](docs/plans/06-ui-theme.md) | ✅ 완료 (v3, 2026-02-11) |
-| 07 | [모노레포 설계](docs/plans/07-monorepo-setup.md) | ✅ 완료 (v3, 2026-02-11) |
+| 07 | [모노레포 설계](docs/plans/07-monorepo-setup.md) | ✅ 완료 (v4, 2026-02-11) |
 
 ## License
 
