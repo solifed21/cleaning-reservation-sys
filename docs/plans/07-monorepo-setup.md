@@ -1,904 +1,189 @@
-# 07. 모노레포 설계
+# Plan 07 - Monorepo Setup (pnpm + Turborepo)
 
-## 📦 개요
+이 문서는 `pnpm workspace`와 `Turborepo`를 기반으로 한 프로젝트의 모노레포 구조 및 설정 계획을 기술합니다.
 
-pnpm workspace와 Turborepo를 활용한 모노레포 구조로, 모바일 앱(Expo)과 웹(TanStack Start) 간 코드 공유 및 개발 효율성을 극대화합니다.
+## 1. 개요
 
-### 모노레포 도입 이유
+- **Package Manager**: `pnpm` (효율적인 의존성 관리 및 디스크 공간 절약)
+- **Build System**: `Turborepo` (캐싱 및 병렬 실행을 통한 빌드 속도 최적화)
+- **Structure**:
+  - `apps/`: 실행 가능한 애플리케이션
+  - `packages/`: 공유 라이브러리 및 설정
 
-1. **코드 공유**: 타입, 유틸리티, UI 컴포넌트 재사용
-2. **일관된 개발 경험**: 통합된 린트, 포맷팅, 테스트 설정
-3. **빌드 최적화**: Turborepo의 캐싱과 병렬 빌드
-4. **의존성 관리**: pnpm의 효율적인 디스크 사용과 호이스팅 제어
-
----
-
-## 🏗️ 최종 폴더 구조
+## 2. 디렉토리 구조
 
 ```
 cleaning-reservation-sys/
 ├── apps/
-│   ├── mobile/                    # Expo React Native
-│   │   ├── app/                   # Expo Router
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── assets/
-│   │   ├── app.json
-│   │   ├── metro.config.js
-│   │   ├── tailwind.config.js
-│   │   └── package.json
-│   │
-│   └── web/                       # TanStack Start
-│       ├── app/
-│       │   ├── routes/
-│       │   ├── components/
-│       │   └── routeTree.gen.ts
-│       ├── server/
-│       │   ├── db/
-│       │   ├── actions/
-│       │   └── functions/
-│       ├── public/
-│       ├── app.config.ts
-│       ├── tailwind.config.js
-│       └── package.json
-│
+│   ├── mobile/          # Expo React Native (iOS/Android)
+│   └── web/             # TanStack Start (Web/SSR/API)
 ├── packages/
-│   ├── shared/                    # 공유 코드
-│   │   ├── src/
-│   │   │   ├── types/
-│   │   │   ├── constants/
-│   │   │   ├── utils/
-│   │   │   └── validators/
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   │
-│   └── ui/                        # 공유 UI 컴포넌트
-│       ├── src/
-│       │   ├── components/
-│       │   ├── styles/
-│       │   └── index.ts
-│       ├── package.json
-│       ├── tailwind.config.js
-│       └── tsconfig.json
-│
-├── docs/
-│   └── plans/
-│
-├── tooling/
-│   ├── eslint/                    # 공유 ESLint 설정
-│   │   ├── library.js
-│   │   ├── next.js
-│   │   └── react.js
-│   │
-│   └── typescript/                # 공유 TypeScript 설정
-│       ├── base.json
-│       ├── nextjs.json
-│       └── react-library.json
-│
-├── package.json                   # 루트
-├── pnpm-workspace.yaml
-├── turbo.json
-├── .gitignore
-├── .npmrc
+│   ├── shared/          # 공통 로직 (Types, Zod schemas, Constants, Utils)
+│   └── ui/              # 공통 UI (Tailwind Config, Components)
+├── package.json         # Root configuration
+├── pnpm-workspace.yaml  # Workspace definition
+├── turbo.json           # Turborepo pipeline config
 └── README.md
 ```
 
----
+## 3. Root 설정
 
-## ⚙️ 루트 설정 파일들
-
-### 1. package.json (루트)
-
-```json
-{
-  "name": "cleaning-reservation-sys",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "clean": "turbo run clean && rm -rf node_modules",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
-    "changeset": "changeset",
-    "version-packages": "changeset version",
-    "release": "turbo run build && changeset publish"
-  },
-  "devDependencies": {
-    "@changesets/cli": "^2.27.1",
-    "@types/node": "^20.11.0",
-    "eslint": "^8.56.0",
-    "prettier": "^3.2.0",
-    "turbo": "^2.0.0",
-    "typescript": "^5.3.0"
-  },
-  "packageManager": "pnpm@8.15.0",
-  "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
-  }
-}
-```
-
-### 2. pnpm-workspace.yaml
+### `pnpm-workspace.yaml`
 
 ```yaml
 packages:
   - "apps/*"
   - "packages/*"
-  - "tooling/*"
 ```
 
-### 3. turbo.json
+### `package.json` (Root)
+
+```json
+{
+  "name": "cleaning-reservation-sys-root",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.0.0",
+    "prettier": "^3.0.0",
+    "eslint": "^8.0.0"
+  },
+  "packageManager": "pnpm@9.x.x"
+}
+```
+
+### `turbo.json`
 
 ```json
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
-  "globalEnv": ["NODE_ENV", "DATABASE_URL"],
-  "tasks": {
+  "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": ["dist/**", ".next/**", "public/dist/**"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
-    "lint": {
-      "dependsOn": ["^build"]
-    },
-    "test": {
-      "dependsOn": ["^build"]
-    },
-    "clean": {
-      "cache": false
+    "lint": {}
+  }
+}
+```
+
+## 4. 패키지 상세 설계
+
+### 4.1. `packages/shared`
+
+앱과 웹에서 공통으로 사용하는 비즈니스 로직 및 타입 정의입니다.
+
+- **역할**:
+  - 데이터 모델 (TypeScript Interfaces)
+  - API 요청/응답 스키마 (Zod)
+  - 날짜/시간 포맷팅 등 순수 함수 유틸리티
+- **의존성**: 외부 라이브러리 최소화 (e.g., `zod`, `date-fns`)
+- **package.json**:
+  ```json
+  {
+    "name": "@cleaning/shared",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+      "build": "tsc",
+      "dev": "tsc --watch"
     }
   }
-}
-```
+  ```
 
-### 4. .npmrc
+### 4.2. `packages/ui`
 
-```
-shamefully-hoist=true
-strict-peer-dependencies=false
-auto-install-peers=true
-```
+디자인 시스템 및 공통 컴포넌트 라이브러리입니다.
 
-### 5. .gitignore
-
-```
-# Dependencies
-node_modules
-.pnpm-store
-
-# Build
-dist
-.next
-.expo
-*.tsbuildinfo
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Turbo
-.turbo
-
-# OS
-.DS_Store
-
-# IDE
-.vscode
-.idea
-
-# Logs
-*.log
-npm-debug.log*
-```
-
----
-
-## 📱 apps/mobile 설정
-
-### package.json
-
-```json
-{
-  "name": "@cleaning-reservation/mobile",
-  "version": "1.0.0",
-  "main": "expo-router/entry",
-  "scripts": {
-    "dev": "expo start",
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "build": "expo export",
-    "lint": "expo lint",
-    "test": "jest",
-    "clean": "rm -rf .expo node_modules"
-  },
-  "dependencies": {
-    "@cleaning-reservation/shared": "workspace:*",
-    "@cleaning-reservation/ui": "workspace:*",
-    "expo": "~51.0.0",
-    "expo-router": "~3.5.0",
-    "expo-status-bar": "~1.12.0",
-    "nativewind": "^4.0.0",
-    "react": "18.2.0",
-    "react-native": "0.74.0",
-    "react-native-safe-area-context": "4.10.1",
-    "react-native-screens": "3.31.1",
-    "@tanstack/react-query": "^5.17.0"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.24.0",
-    "@types/react": "~18.2.45",
-    "eslint": "^8.56.0",
-    "eslint-config-expo": "^7.0.0",
-    "jest": "^29.7.0",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5.3.0"
+- **역할**:
+  - Tailwind CSS 설정 공유 (`tailwind.config.js`)
+  - React Native와 Web(React DOM) 호환성을 고려한 컴포넌트 설계 (가능한 경우)
+    - *참고: React Native Web을 사용하거나, 플랫폼별로 분기 처리*
+  - 기본 UI 컴포넌트 (Button, Input, Card 등)
+- **의존성**: `react`, `react-native` (peer), `tailwindcss`, `nativewind` (선택적)
+- **package.json**:
+  ```json
+  {
+    "name": "@cleaning/ui",
+    "version": "0.0.0",
+    "main": "./src/index.tsx",
+    "types": "./src/index.tsx",
+    "peerDependencies": {
+      "react": "*",
+      "react-native": "*"
+    },
+    "devDependencies": {
+      "@cleaning/shared": "workspace:*"
+    }
   }
-}
+  ```
+
+### 4.3. `apps/web`
+
+TanStack Start 기반의 웹 애플리케이션 및 백엔드 API 서버입니다.
+
+- **역할**:
+  - 사용자 대시보드 (Admin/User)
+  - SSR 및 SEO
+  - API Routes (Backend)
+- **의존성**:
+  - `@cleaning/shared`: API 스키마 및 타입 사용
+  - `@cleaning/ui`: 웹용 UI 컴포넌트 사용
+- **스크립트**:
+  - `dev`: `vinxi dev`
+  - `build`: `vinxi build`
+
+### 4.4. `apps/mobile`
+
+Expo (React Native) 기반의 모바일 앱입니다.
+
+- **역할**:
+  - 사용자 앱 (iOS/Android)
+  - 네이티브 기능 (카메라, 위치, 푸시 알림)
+- **의존성**:
+  - `@cleaning/shared`: API 클라이언트 타입
+  - `@cleaning/ui`: 모바일용 UI 컴포넌트 사용
+- **스크립트**:
+  - `dev`: `expo start`
+  - `android`: `expo start --android`
+  - `ios`: `expo start --ios`
+
+## 5. 의존성 그래프 (Dependency Graph)
+
+```mermaid
+graph TD
+    subgraph apps
+        Web[apps/web]
+        Mobile[apps/mobile]
+    end
+    subgraph packages
+        Shared[packages/shared]
+        UI[packages/ui]
+    end
+
+    Web --> Shared
+    Web --> UI
+    Mobile --> Shared
+    Mobile --> UI
+    UI --> Shared
 ```
 
-### app.json
-
-```json
-{
-  "expo": {
-    "name": "창원원룸 청소",
-    "slug": "cleaning-reservation",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "scheme": "cleaning-reservation",
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.cleaningreservation.app"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.cleaningreservation.app"
-    },
-    "plugins": [
-      "expo-router"
-    ]
-  }
-}
-```
-
-### tailwind.config.js
-
-```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./app/**/*.{js,jsx,ts,tsx}",
-    "./components/**/*.{js,jsx,ts,tsx}",
-    "../../packages/ui/src/**/*.{js,jsx,ts,tsx}",
-  ],
-  presets: [require("nativewind/preset")],
-  theme: {
-    extend: {
-      colors: {
-        // 디자인 시스템에서 정의한 색상
-      },
-    },
-  },
-  plugins: [],
-};
-```
-
-### metro.config.js
-
-```javascript
-const { getDefaultConfig } = require("expo/metro-config");
-const { withNativeWind } = require("nativewind/metro");
-
-const config = getDefaultConfig(__dirname);
-
-module.exports = withNativeWind(config, { input: "./global.css" });
-```
-
----
-
-## 🌐 apps/web 설정
-
-### package.json
-
-```json
-{
-  "name": "@cleaning-reservation/web",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vinxi dev",
-    "build": "vinxi build",
-    "start": "vinxi start",
-    "lint": "eslint .",
-    "test": "vitest",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "clean": "rm -rf .next dist node_modules"
-  },
-  "dependencies": {
-    "@cleaning-reservation/shared": "workspace:*",
-    "@cleaning-reservation/ui": "workspace:*",
-    "@tanstack/react-query": "^5.17.0",
-    "@tanstack/start": "^1.0.0",
-    "drizzle-orm": "^0.29.0",
-    "better-auth": "^1.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "vinxi": "^0.2.0",
-    "zod": "^3.22.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.11.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "drizzle-kit": "^0.20.0",
-    "eslint": "^8.56.0",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5.3.0",
-    "vite": "^5.0.0",
-    "vitest": "^1.0.0"
-  }
-}
-```
-
-### app.config.ts
-
-```typescript
-import { defineConfig } from "@tanstack/start/config";
-import viteTsConfigPaths from "vite-tsconfig-paths";
-
-export default defineConfig({
-  vite: {
-    plugins: [
-      viteTsConfigPaths({
-        projects: ["./tsconfig.json"],
-      }),
-    ],
-  },
-});
-```
-
-### tailwind.config.js
-
-```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./app/**/*.{js,jsx,ts,tsx}",
-    "../../packages/ui/src/**/*.{js,jsx,ts,tsx}",
-  ],
-  theme: {
-    extend: {
-      colors: {
-        // 디자인 시스템에서 정의한 색상
-      },
-    },
-  },
-  plugins: [],
-};
-```
-
----
-
-## 📦 packages/shared 설정
-
-### package.json
-
-```json
-{
-  "name": "@cleaning-reservation/shared",
-  "version": "1.0.0",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "scripts": {
-    "build": "tsc",
-    "lint": "eslint src/",
-    "test": "vitest",
-    "clean": "rm -rf dist node_modules"
-  },
-  "dependencies": {
-    "zod": "^3.22.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.11.0",
-    "eslint": "^8.56.0",
-    "typescript": "^5.3.0",
-    "vitest": "^1.0.0"
-  },
-  "exports": {
-    ".": "./src/index.ts",
-    "./types": "./src/types/index.ts",
-    "./constants": "./src/constants/index.ts",
-    "./utils": "./src/utils/index.ts",
-    "./validators": "./src/validators/index.ts"
-  }
-}
-```
-
-### tsconfig.json
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "lib": ["ES2022"],
-    "moduleResolution": "bundler",
-    "strict": true,
-    "skipLibCheck": true,
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
-```
-
-### src/index.ts
-
-```typescript
-// Types
-export * from "./types";
-
-// Constants
-export * from "./constants";
-
-// Utils
-export * from "./utils";
-
-// Validators
-export * from "./validators";
-```
-
----
-
-## 🎨 packages/ui 설정
-
-### package.json
-
-```json
-{
-  "name": "@cleaning-reservation/ui",
-  "version": "1.0.0",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "scripts": {
-    "build": "tsc",
-    "lint": "eslint src/",
-    "test": "vitest",
-    "clean": "rm -rf dist node_modules"
-  },
-  "dependencies": {
-    "@cleaning-reservation/shared": "workspace:*",
-    "react": "^18.2.0",
-    "react-native": "^0.74.0",
-    "nativewind": "^4.0.0",
-    "class-variance-authority": "^0.7.0",
-    "clsx": "^2.1.0",
-    "tailwind-merge": "^2.2.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.2.0",
-    "eslint": "^8.56.0",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5.3.0",
-    "vitest": "^1.0.0"
-  },
-  "exports": {
-    ".": "./src/index.ts",
-    "./components": "./src/components/index.ts",
-    "./styles": "./src/styles/index.ts"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0",
-    "react-native": "^0.74.0",
-    "nativewind": "^4.0.0"
-  }
-}
-```
-
-### tsconfig.json
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
-    "jsx": "react-native",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "skipLibCheck": true,
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
-```
-
-### tailwind.config.js
-
-```javascript
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
-  theme: {
-    extend: {
-      colors: {
-        // 공유 색상 팔레트
-      },
-    },
-  },
-  plugins: [],
-};
-```
-
-### src/index.ts
-
-```typescript
-// Components
-export * from "./components";
-
-// Styles
-export * from "./styles";
-```
-
----
-
-## 🔗 의존성 관계도
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Apps Layer                           │
-├──────────────────────────┬──────────────────────────────┤
-│   @cleaning-reservation/ │   @cleaning-reservation/      │
-│         mobile           │           web                 │
-│                          │                               │
-│  Expo React Native       │  TanStack Start               │
-│  NativeWind              │  Tailwind CSS                 │
-└──────────────────────────┴──────────────────────────────┘
-            │                           │
-            └───────────┬───────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────┐
-│                   Packages Layer                         │
-├──────────────────────────┬──────────────────────────────┤
-│  @cleaning-reservation/  │  @cleaning-reservation/       │
-│         shared           │           ui                  │
-│                          │                               │
-│  - Types                 │  - Button                     │
-│  - Constants             │  - Input                      │
-│  - Utils                 │  - Card                       │
-│  - Validators            │  - Avatar                     │
-└──────────────────────────┴──────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────┐
-│                 External Dependencies                    │
-│                                                          │
-│  zod, react, react-native, nativewind, tailwindcss      │
-└─────────────────────────────────────────────────────────┘
-```
-
-### 의존성 규칙
-
-1. **apps는 packages에 의존 가능**
-   - `mobile` → `shared`, `ui`
-   - `web` → `shared`, `ui`
-
-2. **packages 간 의존 가능**
-   - `ui` → `shared` (O)
-   - `shared` → `ui` (X)
-
-3. **순환 의존 금지**
-   - 어떤 경우에도 순환 의존 허용 안됨
-
----
-
-## 🛠️ 개발 워크플로우
-
-### 초기 설정
-
-```bash
-# 의존성 설치
-pnpm install
-
-# 데이터베이스 설정 (web 앱)
-cd apps/web
-pnpm db:generate
-pnpm db:push
-```
-
-### 개발 서버 실행
-
-```bash
-# 모든 앱 동시 실행
-pnpm dev
-
-# 특정 앱만 실행
-pnpm --filter @cleaning-reservation/mobile dev
-pnpm --filter @cleaning-reservation/web dev
-```
-
-### 빌드
-
-```bash
-# 모든 패키지 빌드
-pnpm build
-
-# 특정 앱만 빌드
-pnpm --filter @cleaning-reservation/mobile build
-pnpm --filter @cleaning-reservation/web build
-
-# 의존성 포함 빌드 (Turborepo가 자동 처리)
-turbo run build --filter=@cleaning-reservation/web
-```
-
-### 린트 & 테스트
-
-```bash
-# 전체 린트
-pnpm lint
-
-# 전체 테스트
-pnpm test
-
-# 특정 패키지만
-pnpm --filter @cleaning-reservation/shared test
-```
-
-### 패키지 추가
-
-```bash
-# apps/mobile에 react-native-svg 추가
-pnpm --filter @cleaning-reservation/mobile add react-native-svg
-
-# packages/shared에 lodash 추가
-pnpm --filter @cleaning-reservation/shared add lodash
-
-# 루트에 turbo 추가 (devDependencies)
-pnpm add -Dw turbo
-```
-
----
-
-## 🚀 CI/CD 파이프라인
-
-### GitHub Actions 워크플로우
-
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
-
-jobs:
-  lint-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8
-      
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-      
-      - run: pnpm install --frozen-lockfile
-      
-      - name: Lint
-        run: pnpm lint
-      
-      - name: Test
-        run: pnpm test
-      
-      - name: Build
-        run: pnpm build
-
-  deploy-web:
-    needs: lint-and-test
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8
-      
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-      
-      - run: pnpm install --frozen-lockfile
-      
-      - name: Build Web
-        run: pnpm --filter @cleaning-reservation/web build
-      
-      - name: Deploy to Vercel
-        # Vercel 배포 설정
-        run: echo "Deploy to Vercel"
-```
-
-### 캐싱 전략
-
-Turborepo의 원격 캐싱을 활용:
-
-```bash
-# Turborepo 원격 캐싱 활성화
-turbo login
-turbo link
-
-# CI에서 캐시 활용
-turbo run build --remote-cache
-```
-
----
-
-## 📝 코드 공유 예시
-
-### packages/shared/src/types/index.ts
-
-```typescript
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: "customer" | "cleaner";
-  createdAt: Date;
-}
-
-export interface Booking {
-  id: string;
-  customerId: string;
-  cleanerId?: string;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
-  scheduledAt: Date;
-  address: string;
-  notes?: string;
-  createdAt: Date;
-}
-```
-
-### packages/shared/src/validators/index.ts
-
-```typescript
-import { z } from "zod";
-
-export const createBookingSchema = z.object({
-  scheduledAt: z.date(),
-  address: z.string().min(5, "주소를 입력해주세요"),
-  notes: z.string().optional(),
-});
-
-export type CreateBookingInput = z.infer<typeof createBookingSchema>;
-```
-
-### packages/ui/src/components/Button.tsx
-
-```typescript
-import { Pressable, Text } from "react-native";
-import { cva, type VariantProps } from "class-variance-authority";
-
-const buttonStyles = cva("rounded-lg px-4 py-2", {
-  variants: {
-    variant: {
-      primary: "bg-blue-500",
-      secondary: "bg-gray-500",
-      danger: "bg-red-500",
-    },
-    size: {
-      sm: "text-sm",
-      md: "text-base",
-      lg: "text-lg",
-    },
-  },
-  defaultVariants: {
-    variant: "primary",
-    size: "md",
-  },
-});
-
-interface ButtonProps extends VariantProps<typeof buttonStyles> {
-  children: string;
-  onPress: () => void;
-}
-
-export function Button({ variant, size, children, onPress }: ButtonProps) {
-  return (
-    <Pressable onPress={onPress} className={buttonStyles({ variant, size })}>
-      <Text className="text-white font-semibold">{children}</Text>
-    </Pressable>
-  );
-}
-```
-
-### apps/mobile 사용 예시
-
-```typescript
-// app/(customer)/new-booking.tsx
-import { CreateBookingInput, createBookingSchema } from "@cleaning-reservation/shared";
-import { Button } from "@cleaning-reservation/ui";
-
-export default function NewBookingScreen() {
-  const handleSubmit = (data: CreateBookingInput) => {
-    // 예약 생성 로직
-  };
-
-  return (
-    <View>
-      {/* 폼 필드들 */}
-      <Button variant="primary" onPress={handleSubmit}>
-        예약 요청
-      </Button>
-    </View>
-  );
-}
-```
-
----
-
-## ✅ 체크리스트
-
-### 초기 설정
-- [ ] pnpm 설치 및 버전 확인
-- [ ] 루트 package.json 생성
-- [ ] pnpm-workspace.yaml 설정
-- [ ] turbo.json 설정
-- [ ] .gitignore 추가
-
-### 패키지 생성
-- [ ] apps/mobile 구조 및 설정
-- [ ] apps/web 구조 및 설정
-- [ ] packages/shared 구조 및 설정
-- [ ] packages/ui 구조 및 설정
-
-### 개발 환경
-- [ ] ESLint 설정
-- [ ] Prettier 설정
-- [ ] TypeScript 설정
-- [ ] Tailwind CSS 설정
-
-### CI/CD
-- [ ] GitHub Actions 워크플로우
-- [ ] Turborepo 원격 캐싱
-
----
-
-## 📚 참고 자료
-
-- [pnpm Workspace 문서](https://pnpm.io/workspaces)
-- [Turborepo 문서](https://turbo.build/repo/docs)
-- [Expo Router 문서](https://docs.expo.dev/router/introduction/)
-- [TanStack Start 문서](https://tanstack.com/start/latest)
-- [NativeWind 문서](https://www.nativewind.dev/)
+## 6. 초기 설정 체크리스트
+
+1. [ ] `pnpm init` 및 워크스페이스 설정 파일 생성
+2. [ ] `packages/shared` 생성 및 `zod` 설치, 기본 타입 정의
+3. [ ] `packages/ui` 생성 및 Tailwind 설정 내보내기 구성
+4. [ ] `apps/web` (TanStack Start) 초기화 및 로컬 패키지 연결
+5. [ ] `apps/mobile` (Expo) 초기화 및 메트로 번들러 설정(Monorepo 호환)
+6. [ ] `turbo.json` 파이프라인 테스트 (`pnpm build`)
