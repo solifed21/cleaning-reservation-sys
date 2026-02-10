@@ -3,79 +3,79 @@
 - 문서 버전: **v2**
 - 마지막 업데이트: **2026-02-11**
 
-> 목표: **Expo + Expo Router** 기반으로, 요청자(Customer) / 제공자(Cleaner) 2개 역할을 지원하는 MVP 모바일 앱의 **화면/네비게이션/데이터 요구사항**을 정의합니다.
->
-> 구현 기준: `apps/mobile` (Expo React Native)
+> 목표: **Expo + Expo Router** 기반으로, 요청자(Customer) / 제공자(Cleaner) 2개 역할을 지원하는 MVP 모바일 앱의 **화면 구조/플로우/컴포넌트/데이터 요구사항**을 정의합니다.
 
+- 앱(예정): `apps/mobile` (Expo React Native)
 - 라우팅: **Expo Router** (파일 기반)
-- 상태/데이터: **TanStack Query** (서버 상태)
-- 폼: React Hook Form + Zod(권장)
-- 스타일: **NativeWind** + 토큰(Plan 06)
+- 데이터/서버상태: **TanStack Query**
+- 폼 검증: Zod(권장)
+- 스타일: **NativeWind** + 공통 토큰(Plan 06)
+
+참고:
+- PRD/아키텍처: `docs/plans/01-prd-architecture.md`
+- API: `docs/plans/03-api-endpoints.md`
 
 ---
 
 ## 0) 범위 (MVP)
 
 ### 포함
-- 인증(로그인) + 역할 선택(최초 1회)
-- 요청자
-  - 예약(booking) 생성
-  - 내 예약 목록/상세
-  - 취소
-- 제공자
-  - 일감(대기 예약) 목록
-  - 수락/거절
-  - 진행/완료 처리
+- 인증/역할선택
+- 예약 생성(요청자)
+- 예약 목록/상세/상태 변경(요청자/제공자)
 - 예약 기반 메시지(폴링)
 - 리뷰 작성/조회
-- 설정(로그아웃)
+- 프로필/설정
 
-### 제외(Post‑MVP)
-- 결제/정산
-- 실시간 채팅(WebSocket)
-- 푸시 알림(FCM/APNs)
-- 지도/거리 기반 정렬
-- 정기예약/반복 스케줄
+### 제외 (Post‑MVP)
+- 결제, 실시간 채팅(WebSocket), 푸시 알림, 지도/거리 기반 정렬, 정기 예약
 
-### 용어(문서 정합)
-- DB(02) 및 API(03) 기준 **예약 = booking**
-- 과거 문서/대화에서 `reservation` 표기가 섞일 수 있으나, **모바일 구현에서는 booking으로 통일**
+### 용어
+- DB/구현/API는 `bookings`를 사용
+- UI 문맥에서는 “예약(booking)”으로 표기
 
 ---
 
-## 1) 네비게이션 원칙
+## 1) 네비게이션 설계 원칙
 
-### 1.1 Auth Gate (앱 진입 분기)
-- 진입점: `app/index.tsx`
-- 분기 기준: `session` + `user.role`
+### 1.1 Auth Gate (진입 라우팅)
+- 앱 최초 진입: `app/index.tsx`에서 **세션 + role** 확인 후 redirect
 
 권장 분기:
-- 세션 없음 → `(auth)/login`
-- 세션 있음 + role 없음(또는 미설정) → `(auth)/role-select`
-- role=customer → `(customer)`
-- role=cleaner → `(cleaner)`
+- 미인증 → `(auth)/login`
+- 인증됨 + role 없음 → `(auth)/role-select`
+- 인증됨 + role=customer → `(customer)`
+- 인증됨 + role=cleaner → `(cleaner)`
 
-> 역할(role)은 서버의 `users.role`(Plan 02) 기반. role-select에서 서버에 반영 후 다음 실행부터는 자동 분기.
+> role은 서버 세션(예: `/api/auth/session` 또는 `GET /api/v1/me`)과 동기화되는 값을 사용.
 
-### 1.2 레이아웃 전략
-- Root: QueryClientProvider / ThemeProvider / SessionProvider / Toast / ErrorBoundary
-- 역할별 영역: **Tabs(허브) + Stack(상세/플로우)** 혼합
-- 공통 화면: `(shared)`로 분리해 중복 최소화
+### 1.2 레이아웃 전략 (Tabs + Stack 혼합)
+- Root `_layout.tsx`
+  - QueryClientProvider
+  - Session/Auth Provider
+  - Theme/Token provider(또는 NativeWind config)
+  - Global Toast, ErrorBoundary
+- Role 영역
+  - **Tabs(허브)** + **Stack(상세/작성 플로우)**
 
-### 1.3 딥링크/공유 규칙
-- 공통 상세 화면은 URL param(bookingId 등) 기반으로 진입 가능하게 설계
-- 외부 공유(링크 공유)는 Post‑MVP로 두되, 내부 라우팅은 동일한 형태로 유지
+### 1.3 공통 화면(shared) 우선
+- 예약 상세, 채팅방, 리뷰, 설정은 `(shared)`로 배치
+- Customer/Cleaner에서 동일 라우트를 push하여 UI/로직 중복 최소화
+
+### 1.4 딥링크/내비게이션 규칙
+- 기본적으로 `bookingId`가 핵심 키
+- 딥링크(예시): `myapp://booking/booking_123` → `(shared)/booking/[id]`
 
 ---
 
-## 2) Expo Router 파일 구조 (권장)
+## 2) Expo Router 라우팅 구조(권장)
 
-> 실제 구현 기준: `apps/mobile/app/*`
+> 실제 구현 기준 경로: `apps/mobile/app/*`
 
 ```text
 apps/mobile/app/
 ├── _layout.tsx
-├── index.tsx                      # Auth Gate
+├── index.tsx                      # Splash/Entry (Auth Gate)
 ├── +not-found.tsx
 │
 ├── (auth)/
@@ -84,11 +84,11 @@ apps/mobile/app/
 │   └── role-select.tsx
 │
 ├── (customer)/
-│   ├── _layout.tsx                # Tabs
+│   ├── _layout.tsx                # Tabs container
 │   ├── (tabs)/
-│   │   ├── index.tsx              # 홈
+│   │   ├── index.tsx              # 홈(요청자)
 │   │   ├── bookings.tsx           # 내 예약 목록
-│   │   └── profile.tsx            # 내 정보/설정 진입
+│   │   └── profile.tsx            # 내 프로필/설정
 │   └── request/                   # 예약 생성 Wizard (Stack)
 │       ├── service.tsx
 │       ├── datetime.tsx
@@ -97,309 +97,195 @@ apps/mobile/app/
 │       └── confirm.tsx
 │
 ├── (cleaner)/
-│   ├── _layout.tsx                # Tabs
+│   ├── _layout.tsx                # Tabs container
 │   ├── (tabs)/
-│   │   ├── index.tsx              # 일감(대기) 목록
-│   │   ├── schedule.tsx           # 내 일정(확정/진행/완료)
-│   │   └── profile.tsx            # 제공자 프로필
+│   │   ├── index.tsx              # 일감 목록(pending)
+│   │   ├── schedule.tsx           # 내 일정(confirmed/in_progress/completed)
+│   │   └── profile.tsx            # 제공자 프로필/설정
 │   └── job/
-│       └── [id].tsx               # 제공자 관점 상세(수락/상태 변경)
+│       └── [id].tsx               # 예약 상세(수락/거절/상태 변경)
 │
 └── (shared)/
     ├── booking/
     │   └── [id].tsx               # 공통 예약 상세(읽기 중심)
     ├── chat/
-    │   └── [bookingId].tsx        # 예약 기반 채팅방
+    │   └── [bookingId].tsx        # 채팅방(예약 기반)
     ├── reviews/
     │   ├── write.tsx              # 리뷰 작성
-    │   └── cleaner/
-    │       └── [cleanerId].tsx    # 청소부 리뷰 목록
+    │   └── cleaner-[id].tsx       # 청소부 리뷰 목록
     └── settings/
-        └── index.tsx              # 설정(로그아웃)
+        ├── index.tsx              # 설정
+        └── account.tsx            # 계정(로그아웃/탈퇴)
 ```
 
-> NOTE: API(03)의 리소스는 `/api/v1/bookings`로 정의되어 있으므로, 화면/컴포넌트 네이밍도 booking을 사용합니다.
+> `chat` 탭은 MVP에서 “예약 상세 → 채팅” 진입만으로도 충분하여 기본 탭에서는 제외(필요 시 추가).
 
 ---
 
-## 3) 화면 목록 (요약)
+## 3) 화면 카탈로그 (Screen Inventory)
 
-### 3.1 인증/Auth
-- Login
-- Role Select
+> 목적: 구현 단계에서 “무슨 화면이 있고, 어떤 API/상태를 가지는지”를 일관된 포맷으로 확인.
+
+### 3.1 인증/공통
+
+- **(auth)/login**
+  - 목적: OAuth 로그인 시작/복귀
+  - 데이터/API: `GET /api/auth/session`(옵션), provider sign-in
+  - 주요 상태: loading, error
+
+- **(auth)/role-select**
+  - 목적: 최초 1회 역할 선택(customer/cleaner)
+  - 데이터/API: (정책 확정 필요)
+    - 옵션 A: `PATCH /api/v1/me { role }`
+    - 옵션 B: cleaner는 `PATCH /api/v1/cleaners/me` 생성/업데이트로 role 확정
 
 ### 3.2 요청자(Customer)
-- 홈
-- 내 예약 목록
-- 예약 생성 Wizard (서비스 → 일정 → 주소 → 요청사항 → 확인)
-- (shared) 예약 상세
-- (shared) 채팅
-- 프로필/설정
+
+- **(customer)/(tabs)/index (홈)**
+  - 목적: 빠른 “새 예약 생성” 진입 + 최근 예약 요약
+  - API: `GET /api/v1/bookings?roleView=customer&limit=20`
+  - 컴포넌트: `QuickActionCard`, `BookingSummaryCard`, `StatusBadge`
+
+- **(customer)/(tabs)/bookings (내 예약 목록)**
+  - 목적: 상태별 목록 + 상세 진입
+  - API: `GET /api/v1/bookings?roleView=customer&status=...`
+  - 컴포넌트: `BookingCard`, `FilterChips`, `EmptyState`
+
+- **(customer)/request/* (예약 생성 Wizard)**
+  - 목적: 단계별 입력 수집, confirm에서 생성
+  - API:
+    - 지역 목록: `GET /api/v1/areas`, `GET /api/v1/areas/:areaId/sub-areas` (address 단계에서 사용)
+    - 생성: `POST /api/v1/bookings`
+  - 상태: draft 저장(zustand 등), 입력 검증, submit loading
+
+- **(customer)/(tabs)/profile**
+  - 목적: 내 정보/설정 진입
+  - API: `GET/PATCH /api/v1/me`
 
 ### 3.3 제공자(Cleaner)
-- 일감 목록(pending)
-- 내 일정(confirmed/in_progress/completed)
-- (cleaner) 예약 상세(수락/상태 변경)
-- (shared) 채팅
-- 프로필/설정
+
+- **(cleaner)/(tabs)/index (일감 목록)**
+  - 목적: 대기(pending) 예약 탐색
+  - API: `GET /api/v1/bookings?roleView=cleaner&status=pending`
+  - 컴포넌트: `BookingCard`, `SortDropdown`(옵션), `EmptyState`
+
+- **(cleaner)/job/[id] (일감 상세/액션)**
+  - 목적: 상세 확인 후 수락/거절/시작/완료
+  - API:
+    - 상세: `GET /api/v1/bookings/:id`
+    - 수락: `POST /api/v1/bookings/:id/accept`
+    - 거절: `POST /api/v1/bookings/:id/reject`
+    - 시작: `POST /api/v1/bookings/:id/start`
+    - 완료: `POST /api/v1/bookings/:id/complete`
+  - 상태: action loading, CONFLICT 처리
+
+- **(cleaner)/(tabs)/schedule (내 일정)**
+  - 목적: confirmed/in_progress/completed 관리
+  - API: `GET /api/v1/bookings?roleView=cleaner&status=confirmed|in_progress|completed`
+
+- **(cleaner)/(tabs)/profile**
+  - 목적: 제공자 프로필 관리(가격/소개 등)
+  - API: `GET/PATCH /api/v1/cleaners/me`
+
+### 3.4 공통(Shared)
+
+- **(shared)/booking/[id] (예약 상세)**
+  - 목적: 예약 정보 조회 + 상태에 따른 CTA + 채팅/리뷰 진입
+  - API: `GET /api/v1/bookings/:id`, 취소: `POST /api/v1/bookings/:id/cancel`
+
+- **(shared)/chat/[bookingId] (채팅방)**
+  - 목적: 예약 기반 메시지(폴링)
+  - API: `GET/POST /api/v1/bookings/:id/messages`
+
+- **(shared)/reviews/write (리뷰 작성)**
+  - 목적: 완료된 예약에 대한 리뷰 작성
+  - API: `POST /api/v1/bookings/:id/reviews`
+
+- **(shared)/reviews/cleaner-[id] (리뷰 목록)**
+  - 목적: 청소부 리뷰 목록
+  - API: `GET /api/v1/cleaners/:id/reviews`
+
+- **(shared)/settings/* (설정/계정)**
+  - 목적: 로그아웃/탈퇴 등
+  - API: `POST /api/auth/sign-out`(또는 프레임워크 제공 로그아웃)
 
 ---
 
-## 4) API 매핑 (Plan 03 기준)
+## 4) 역할별 플로우 정의
 
-모바일은 **API v1**을 기준으로 호출합니다.
+### 4.1 요청자(Customer) 플로우
 
-- Booking
-  - 생성: `POST /api/v1/bookings`
-  - 목록: `GET /api/v1/bookings?status=...`
-  - 상세: `GET /api/v1/bookings/:id`
-  - 취소: `POST /api/v1/bookings/:id/cancel`
-  - 수락/거절: `POST /api/v1/bookings/:id/accept`, `POST /api/v1/bookings/:id/reject`
-  - 시작/완료: `POST /api/v1/bookings/:id/start`, `POST /api/v1/bookings/:id/complete`
+```text
+앱 시작
+  → (Auth Gate)
+  → 로그인
+  → 역할 선택(customer)
+  → 홈
+  → 예약 생성 Wizard
+     - 서비스/평수
+     - 날짜/시간
+     - 주소(지역 선택 + 상세주소)
+     - 요청사항/예산
+     - 최종 확인
+  → 예약 생성 완료
+  → 내 예약/예약 상세
+  → (confirmed 이후) 채팅
+  → 완료(completed)
+  → 리뷰 작성
+```
 
-- Messages
-  - 목록: `GET /api/v1/bookings/:id/messages`
-  - 전송: `POST /api/v1/bookings/:id/messages`
+핵심 UX 포인트:
+- Wizard는 “뒤로/앞으로” 이동이 잦으므로 **draft 상태 저장** 필수
+- 예약 생성 submit은 중복 클릭 방지(버튼 disable + 로딩)
 
-- Reviews
-  - 작성: `POST /api/v1/bookings/:id/reviews`
-  - 조회(청소부): `GET /api/v1/cleaners/:id/reviews`
+### 4.2 제공자(Cleaner) 플로우
 
-- Auth/Me
-  - 세션: `GET /api/auth/session`
-  - 내 정보: `GET/PATCH /api/v1/me`
+```text
+앱 시작
+  → (Auth Gate)
+  → 로그인
+  → 역할 선택(cleaner)
+  → 일감 목록(pending)
+  → 일감 상세
+     - 수락(confirmed) 또는 거절
+     - 시작(in_progress)
+     - 완료(completed)
+  → 내 일정(schedule)에서 상태별 관리
+  → (필요 시) 채팅
+  → 완료 후 리뷰(정책에 따라 상호)
+```
 
----
-
-## 5) TanStack Query 설계
-
-### 5.1 Query Key 규칙(권장)
-- `['session']`
-- `['me']`
-- `['bookings', { scope: 'me', status, roleView }]`
-- `['booking', bookingId]`
-- `['messages', bookingId]`
-- `['cleanerReviews', cleanerId]`
-
-### 5.2 Invalidation 규칙(예)
-- booking 상태 변경/취소/수락/완료 성공 시
-  - invalidate: `['booking', id]`
-  - invalidate: `['bookings']` (리스트 갱신)
-- 메시지 전송 성공 시
-  - optimistic update + invalidate: `['messages', bookingId]`
-
-### 5.3 에러 표준 처리(권장)
-- 401: 세션 만료 → 로그인으로
-- 403: 권한 없음 → 토스트 + back
-- 404: 리소스 없음 → NotFoundView
-- 409(CONFLICT): 경합(수락 경쟁 등) → 토스트 + 관련 목록/상세 invalidate
-
----
-
-## 6) 요청자(Customer) 상세 설계
-
-### 6.1 홈 `(customer)/(tabs)/index`
-**목적**
-- “예약 만들기” 진입
-- 최근 예약 1건 요약(있으면)
-
-**데이터**
-- `GET /api/v1/bookings?limit=1&status=pending|confirmed|in_progress` (서버 지원에 맞게)
-
-**UI**
-- Primary CTA: “청소 예약하기” → `(customer)/request/service`
-- 최근 예약 카드 → `(shared)/booking/[id]`
-
-**Empty State**
-- “최근 예약이 없어요. 예약을 만들어볼까요?”
+핵심 UX 포인트:
+- 수락은 경합 가능 → 서버에서 `CONFLICT` 시 토스트 + 목록 refetch
+- 상태 변경 버튼은 현재 status에 따라 노출/비활성 제어
 
 ---
 
-### 6.2 내 예약 목록 `(customer)/(tabs)/bookings`
-**목적**
-- 내 예약을 상태 필터로 탐색
+## 5) 상태(Status)별 UI/CTA 가이드
 
-**데이터**
-- `GET /api/v1/bookings?status=...` (status optional)
+권장 상태 머신(Plan 03):
+- `pending` → `confirmed` → `in_progress` → `completed`
+- 취소: `cancelled`
 
-**상태 필터(칩)**
-- 전체 / 대기 / 확정 / 진행 / 완료 / 취소
-
-**리스트 아이템(권장 필드)**
-- 날짜/시간, 지역(동), 상태 배지, 서비스 요약(방 타입/평수/서비스)
-
-**Empty State**
-- “예약이 없어요. 지금 예약을 만들어볼까요?”
-
----
-
-### 6.3 예약 생성 Wizard `(customer)/request/*`
-**원칙**
-- step별 입력은 로컬 상태(zustand 또는 context)에 저장
-- confirm에서 단 1회 `POST /api/v1/bookings`
-- 뒤로가기 시 입력 유지
-- 서버 오류 시: 입력 유지 + 재시도 가능
-
-#### Step 1: 서비스 `(customer)/request/service`
-- 입력: `roomType`, `roomSize`, `services[]`, `durationHours`
-- 검증(예):
-  - `durationHours` 1~8
-  - `roomSize` 양수
-
-#### Step 2: 일정 `(customer)/request/datetime`
-- 입력: `scheduledDate`, `scheduledTime`
-- UX: 가능한 날짜/시간 제한은 MVP에선 최소(검증은 서버에서도 수행)
-
-#### Step 3: 주소 `(customer)/request/address`
-- 입력: `subAreaId`, `address`, `addressDetail`
-- MVP: 주소 검색 없이 텍스트 입력(추후 카카오 주소 API 등 연결)
-
-#### Step 4: 요청사항 `(customer)/request/details`
-- 입력: `description`, `budget(optional)`
-
-#### Step 5: 확인 `(customer)/request/confirm`
-- 서버 호출: `POST /api/v1/bookings`
-- 성공 시:
-  - 생성된 `bookingId`로 `(shared)/booking/[id]` 이동
-  - `['bookings']` invalidate
+### 5.1 CTA 매트릭스(요약)
+- `pending`
+  - Customer: 취소, “수락 대기” 안내
+  - Cleaner: 수락/거절
+- `confirmed`
+  - 양측: 채팅, 일정/주소 확인
+- `in_progress`
+  - Cleaner: 완료 처리
+  - Customer: 상태 표시 + 채팅
+- `completed`
+  - 양측: 리뷰 CTA(정책 확정 필요)
+- `cancelled`
+  - 양측: 취소 사유/취소자(있다면) 표시
 
 ---
 
-### 6.4 예약 상세(공통) `(shared)/booking/[id]`
-**목적**
-- 상태/일정/주소/요청사항 확인
-- 상태별 CTA 제공(요청자/제공자에게 노출되는 버튼은 서버 권한 모델과 일치)
+## 6) 컴포넌트 구조 설계
 
-**데이터**
-- `GET /api/v1/bookings/:id`
-
-**CTA(요청자 관점)**
-- `pending`: “취소” → `POST /api/v1/bookings/:id/cancel`
-- `confirmed | in_progress`: “채팅하기” → `(shared)/chat/[bookingId]`
-- `completed`: “리뷰 작성” → `(shared)/reviews/write?bookingId=...`
-
-**표시(권장 섹션)**
-- 예약 상태 타임라인(대기→확정→진행→완료/취소)
-- 서비스/시간/지역/주소
-- 요청사항
-- 상대(청소부) 정보(확정 이후에만)
-
-**권한/보안**
-- 상세는 booking 참여자만 조회 가능(서버에서 강제)
-
----
-
-### 6.5 프로필 `(customer)/(tabs)/profile` + 설정 `(shared)/settings/index`
-- `GET/PATCH /api/v1/me`
-- 설정: 로그아웃
-
----
-
-## 7) 제공자(Cleaner) 상세 설계
-
-### 7.1 일감 목록 `(cleaner)/(tabs)/index`
-**목적**
-- 대기(pending) 예약을 탐색하고 상세로 진입
-
-**데이터**
-- `GET /api/v1/bookings?status=pending` (서버에서 cleaner view 지원 시 추가)
-
-**카드 표시**
-- 지역(동), 날짜/시간, 예상 duration, roomType/roomSize, services
-
-**CTA**
-- 카드 탭 → `(cleaner)/job/[id]`
-
-**Empty State**
-- “대기 중인 일감이 없습니다.”
-
----
-
-### 7.2 제공자 상세(수락/상태 변경) `(cleaner)/job/[id]`
-**목적**
-- 수락/거절 + 진행/완료 상태 변경
-
-**데이터**
-- `GET /api/v1/bookings/:id`
-
-**CTA**
-- `pending`:
-  - “수락” → `POST /api/v1/bookings/:id/accept`
-  - “거절” → `POST /api/v1/bookings/:id/reject` (사유 optional)
-- `confirmed`:
-  - “시작” → `POST /api/v1/bookings/:id/start`
-  - “채팅” → `(shared)/chat/[bookingId]`
-- `in_progress`:
-  - “완료” → `POST /api/v1/bookings/:id/complete`
-
-**경합 처리(중요)**
-- 이미 다른 cleaner가 수락했다면 `409(CONFLICT)` 표준 처리:
-  - 토스트: “이미 다른 제공자가 수락한 예약입니다.”
-  - 목록/상세 invalidate 후 뒤로가기 유도
-
----
-
-### 7.3 내 일정 `(cleaner)/(tabs)/schedule`
-**목적**
-- 확정/진행/완료 예약을 리스트 형태로 관리
-
-**데이터**
-- `GET /api/v1/bookings?status=confirmed|in_progress|completed`
-
-**UI**
-- 섹션: 오늘 / 예정 / 완료
-- 카드 탭:
-  - 읽기 중심은 `(shared)/booking/[id]`
-  - 상태 변경이 필요하면 `(cleaner)/job/[id]`로 이동
-
----
-
-### 7.4 제공자 프로필 `(cleaner)/(tabs)/profile`
-- MVP는 최소(소개/가격 표시)로 시작
-- `GET /api/v1/cleaners/me`, `PATCH /api/v1/cleaners/me` (Plan 03)
-
----
-
-## 8) 채팅(Shared)
-
-### 8.1 채팅방 `(shared)/chat/[bookingId]`
-**MVP 방식**: 폴링
-
-- 목록 조회: `GET /api/v1/bookings/:id/messages`
-- 전송: `POST /api/v1/bookings/:id/messages`
-
-**권장 UX**
-- polling interval: 3~5초
-- 앱 background 시 polling 중지(AppState 연동)
-- 전송은 optimistic update
-- 이미지 메시지는 Post‑MVP
-
-**Empty State**
-- “첫 메시지를 보내보세요.”
-
----
-
-## 9) 리뷰(Shared)
-
-### 9.1 리뷰 작성 `(shared)/reviews/write`
-**진입 조건**
-- booking 상태가 `completed`
-- 아직 리뷰가 없을 때(서버에서 1:1 제약이면 중복 작성 차단)
-
-**API**
-- `POST /api/v1/bookings/:id/reviews`
-
-**UI 요소**
-- 별점(1~5)
-- 코멘트
-- 태그(선택) (Plan 02 `review_tag` 참고)
-
-### 9.2 청소부 리뷰 목록 `(shared)/reviews/cleaner/[cleanerId]`
-- `GET /api/v1/cleaners/:id/reviews`
-
----
-
-## 10) 컴포넌트/폴더 구조(모바일 앱 내부)
+### 6.1 앱 폴더 구조(권장)
 
 ```text
 apps/mobile/
@@ -407,7 +293,7 @@ apps/mobile/
 ├── components/
 │   ├── atoms/                 # Button, Input, Badge...
 │   ├── molecules/             # FormField, RatingStars...
-│   ├── organisms/             # BookingCard, MessageList...
+│   ├── organisms/             # BookingCard, BookingDetail, MessageList...
 │   └── layouts/               # ScreenLayout, KeyboardAvoidLayout...
 ├── features/
 │   ├── auth/
@@ -416,48 +302,57 @@ apps/mobile/
 │   ├── reviews/
 │   └── profile/
 ├── lib/
-│   ├── api/                   # fetcher, typed client
+│   ├── api/                   # fetcher, typed client wrappers
 │   ├── query/                 # query keys, hooks
 │   ├── navigation/            # role routing helpers
 │   └── constants/             # status label/color, service types...
-└── store/                     # wizard state (zustand)
+└── store/                     # wizard 임시 상태(zustand 등)
 ```
 
----
+### 6.2 재사용 컴포넌트 후보(우선순위)
 
-## 11) 상태(Status)별 UI 가이드
-
-> DB enum(Plan 02): `pending | confirmed | in_progress | completed | cancelled`
-
-- `pending`
-  - Customer: “대기중”(취소 가능)
-  - Cleaner: “수락/거절”
-- `confirmed`
-  - 양측: 일정/주소 확인, 채팅 가능
-  - Cleaner: 시작 처리 가능
-- `in_progress`
-  - Cleaner: 완료 처리 가능
-- `completed`
-  - 양측: 리뷰 CTA(정책에 따라)
-- `cancelled`
-  - 취소자/사유/시각 표시
-
----
-
-## 12) 접근성/디자인 품질(최소 기준)
-
-- 터치 타겟 최소 44px
-- 주요 버튼은 색상 + 텍스트로 상태를 중복 표현(색약 대응)
-- 폼 에러는 필드 근처에 명시 + 스크린리더 읽힘
-- 날짜/시간 표기는 로케일 `ko-KR` 기준
+- Layout
+  - `ScreenLayout` (safe area + padding + header)
+  - `KeyboardAvoidLayout`
+- Booking
+  - `BookingCard`
+  - `BookingStatusPill` (status → label/color)
+  - `BookingMetaRow` (날짜/시간/주소/서비스)
+- Chat
+  - `MessageBubble`
+  - `MessageList`
+  - `MessageComposer`
+- Form
+  - `FormField` (label + input + error)
+  - `DateTimePickerField`
+  - `SelectField` (지역/서비스)
+- Common
+  - `PrimaryButton`, `SecondaryButton`, `TextButton`
+  - `EmptyState`, `LoadingView`, `ErrorView`
 
 ---
 
-## 13) 구현 체크리스트
+## 7) 데이터 패턴 (TanStack Query)
 
-- [ ] `app/index.tsx` Auth Gate 구현(세션/role redirect)
-- [ ] booking query/mutation hooks 작성(`useBookings`, `useBooking`, `useAcceptBooking`...)
-- [ ] 예약 생성 wizard 상태 저장(zustand)
-- [ ] status 라벨/색상/CTA 매핑 상수화
-- [ ] 채팅 폴링 + optimistic send
-- [ ] 리뷰 작성 조건(완료 후 1회) 서버/클라 동기화
+### 7.1 Query Key 규칙(예)
+- `['me']`
+- `['bookings', { roleView, status, from, to, cursor }]`
+- `['booking', id]`
+- `['messages', bookingId]`
+- `['cleanerReviews', cleanerId]`
+
+### 7.2 채팅 폴링 정책(MVP)
+- fetch interval: 3~5초
+- 앱 background 시 polling 정지
+- 전송 성공 시 optimistic update(또는 invalidate)
+
+---
+
+## 8) 구현 체크리스트(다음 단계)
+
+- [ ] `app/index.tsx` role 기반 redirect 유틸 작성
+- [ ] 예약 생성 wizard 임시 상태 저장(zustand or context)
+- [ ] 예약 status enum/라벨/색상 매핑 상수화
+- [ ] 메시지 폴링 주기/백오프 정책 정의
+- [ ] 리뷰 작성 가능 조건(완료 후, 1회) 정책 확정
+- [ ] `apps/mobile/app/` 스캐폴딩 생성(구현 단계)
