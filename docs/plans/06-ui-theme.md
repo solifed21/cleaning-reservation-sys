@@ -1,9 +1,9 @@
 # Plan 06: UI/UX 테마 & 디자인 시스템
 
-- 문서 버전: **v3**
+- 문서 버전: **v4**
 - 마지막 업데이트: **2026-02-11**
 
-본 문서는 **청소 예약 서비스**에 어울리는 “깔끔함(청결)”과 “신뢰감(전문성)”을 중심으로, Web(TanStack Start) + Mobile(Expo RN)에서 일관되게 사용할 **UI/UX 테마 및 디자인 시스템**을 정의합니다.
+본 문서는 **청소 예약 서비스**에 어울리는 “깔끔함(청결)”과 “신뢰감(전문성)”을 중심으로, Web(TanStack Start) + Mobile(Expo React Native)에서 **동일한 규칙/토큰/컴포넌트 언어**로 구현할 수 있는 **UI/UX 테마 및 디자인 시스템**을 정의합니다.
 
 > 목표
 > - 같은 토큰/규칙으로 Web·Mobile을 동시에 설계/구현
@@ -12,56 +12,65 @@
 
 ---
 
+## 0) 범위 & 원칙
+
+### 0.1 적용 범위
+- **브랜드 방향**(톤/메시지/시각 성격)
+- **디자인 토큰**(색상/타이포/간격/라운드/그림자)
+- **컴포넌트 규격**(Button, Input, Card, Badge…)
+- **도메인 UX 패턴**(예약 플로우, 상태, 취소/환불)
+- **접근성/품질 기준**
+
+### 0.2 핵심 철학
+1. **규칙성 = 신뢰**: 동일한 의미는 동일한 위치/라벨/색으로
+2. **정보의 정렬 = 깔끔함**: 숫자/날짜/가격/상태는 표준 포맷 고정
+3. **부정확한 표현 금지**: “대충/아마” 같은 표현을 UI에서 제거
+4. **과한 장식 금지**: 그라데이션/강한 그림자/과도한 라운드 최소화
+5. **모바일 우선 조작성**: CTA/터치영역/키보드/세이프에리어 중심
+
+---
+
 ## 1) 브랜드 방향 (Brand Direction)
 
-### 1.1 키워드
-- **Clean**: 흰 배경, 규칙적인 간격, 얇은 border, 절제된 그림자
-- **Trust**: 상태/가격/정책 표기의 일관성, 오류 메시지의 해결 안내, 신뢰 장치(후기/인증)
-- **Helpful**: 사용자가 망설이는 지점에 예시/가이드 제공(주소, 요청사항, 예약 상태 등)
+### 1.1 브랜드 키워드
+- **Clean**: 흰 배경, 일정한 간격, 얇은 border, 절제된 그림자
+- **Trust**: 가격·정책·상태 표기의 일관성, 오류 메시지의 해결 안내, 후기/인증 등 신뢰 장치
+- **Calm**: 급하지 않고 차분한 상호작용(애니메이션/색 사용 절제)
+- **Helpful**: 사용자가 망설이는 지점에 예시/가이드(주소, 요청사항, 예약 상태 등)
 
 ### 1.2 톤 & 매너 (UX Writing)
-- 문장: 짧고 단정하게(“~해요”체의 정중한 구어체 권장)
-- 표현: 애매한 단어 지양(“아마”, “대략”), **확정/대기/취소** 같은 상태를 명확히
-- 안내: “왜” + “다음 행동”을 같이 제시
+- 문장: 짧고 단정하게(정중한 구어체 “~해요/주세요” 권장)
+- 표현: 애매한 단어 지양 → **확정/대기/취소/환불**을 명확히
+- 안내: 항상 **왜(원인) + 다음 행동**을 같이 제시
 
 예시
 - ✅ “예약이 접수됐어요. 제공자가 확인하면 알려드릴게요.”
 - ✅ “취소가 완료됐어요. 환불은 영업일 1~3일 내 처리돼요.”
+- ✅ “주소가 정확하지 않아요. ‘동/호수’까지 입력해 주세요.”
 - ❌ “예약이 된 것 같아요.”
 
-### 1.3 시각적 성격
-- Primary(브랜드): **차분한 블루** → 신뢰/안정
-- Success(청결/완료): **그린/민트 계열** → 완료/성공/청결
-- UI는 “선명한 대비 + 절제된 색 사용(컬러 남발 금지)”
+### 1.3 비주얼 성격
+- Primary(브랜드): **차분한 블루(신뢰/안정)**
+- Success(완료/청결): **민트/그린(상쾌/완료)**
+- 강조 규칙: “컬러로 장식”이 아니라 **컬러로 의미(상태/행동)를 전달**
 
 ---
 
-## 2) 디자인 원칙 (Design Principles)
+## 2) 디자인 토큰 (Design Tokens)
 
-1. **규칙성 = 신뢰**: 동일한 상태/행동은 동일한 색/라벨/위치로 제공
-2. **핵심 먼저, 상세는 접기**: 카드에는 ‘날짜/지역/가격/상태’를 우선 노출
-3. **실패를 친절하게**: 오류는 입력 근처에, 해결 방법을 함께
-4. **피드백은 즉시**: 클릭/터치 → pressed/로딩/완료를 1초 안에 체감
-5. **모바일 우선 조작성**: CTA는 하단 고정 영역(필요 시), 터치 타겟 44px 이상
-6. **정보의 표준화**: 가격·시간·주소·정책은 항상 같은 포맷으로 표기
+> 단일 소스: `packages/ui`에서 토큰을 관리하고 Web(Tailwind), Mobile(NativeWind/StyleSheet)에 배포합니다.
 
----
-
-## 3) 디자인 토큰 (Design Tokens)
-
-> 단일 소스: `packages/ui`에서 토큰을 관리하고 Web/Tailwind, RN(NativeWind/StyleSheet)에 배포합니다.
-
-### 3.1 토큰 네이밍 규칙
-- **역할 기반(role-based)** 토큰을 우선 사용
+### 2.1 토큰 네이밍 규칙
+- **역할 기반(role-based)** 토큰 우선
   - 예: `text.primary`, `surface.elevated`, `border.default`, `brand.primary`, `status.success`
 - 컴포넌트에서 raw hex 직접 사용 금지
 - “컴포넌트 전용 토큰”은 최후의 수단
-  - 예: `button.primary.bg` 같은 파편화는 지양 → `brand.primary`를 쓰고 variant는 컴포넌트 레벨에서
+  - `button.primary.bg` 같은 파편화 지양 → `brand.primary` + 컴포넌트 variant로 해결
 
-### 3.2 Color Tokens (Light)
+### 2.2 Color Tokens (Light)
 
 #### Brand
-- `brand.primary`: **#2563EB** (Blue 600) — 메인 CTA, 링크 강조
+- `brand.primary`: **#2563EB** (Blue 600) — 메인 CTA/링크
 - `brand.primaryHover`: #1D4ED8 (Blue 700)
 - `brand.primarySoft`: #EFF6FF (Blue 50) — 배경 하이라이트
 
@@ -75,6 +84,7 @@
 - `text.primary`: #111827 (Gray 900)
 - `text.secondary`: #6B7280 (Gray 500)
 - `text.tertiary`: #9CA3AF (Gray 400)
+- `text.onBrand`: #FFFFFF
 
 #### Status (Semantic)
 - `status.success`: #10B981 (Green 500)
@@ -90,7 +100,7 @@
 - `focus.ring`: rgba(37, 99, 235, 0.35)
 - `overlay.scrim`: rgba(17, 24, 39, 0.40)
 
-### 3.3 Color Tokens (Dark)
+### 2.3 Color Tokens (Dark)
 
 정책
 - 기본은 **라이트 우선**(청결/신뢰 이미지).
@@ -104,7 +114,7 @@
 - `text.secondary`: rgba(249,250,251,0.72)
 - `brand.primary`: #3B82F6
 
-### 3.4 Typography Tokens
+### 2.4 Typography Tokens
 
 - 기본 서체
   - Web: **Pretendard** 권장
@@ -120,10 +130,10 @@
   - `caption`: 12 / 16 / 400
 
 - 숫자/가격(정렬 신뢰성)
-  - Web: `font-variant-numeric: tabular-nums;` 권장
-  - 공통: 금액 표기에서 천 단위 구분, 통화 단위 고정(예: `12,000원`)
+  - Web: `font-variant-numeric: tabular-nums;` 적용 권장
+  - 공통: 금액은 천 단위 구분 + 통화 단위 고정(예: `12,000원`)
 
-### 3.5 Spacing / Radius
+### 2.5 Spacing / Radius
 - Spacing: 4pt 기반 `0, 4, 8, 12, 16, 20, 24, 32, 40, 48`
 - Radius
   - `sm`: 8
@@ -131,23 +141,21 @@
   - `lg`: 16 (카드)
   - `pill`: 999 (칩/배지)
 
-### 3.6 Shadow / Elevation
+### 2.6 Shadow / Elevation
 “깨끗함”을 위해 그림자는 약하게, 기본은 **border + soft shadow**.
 - `elevation.1`: `0 1px 2px rgba(0,0,0,0.06)`
 - `elevation.2`: `0 6px 16px rgba(0,0,0,0.08)`
 
-### 3.7 토큰 소스(권장 파일 형태)
-
+### 2.7 토큰 단일 소스(권장 파일 형태)
 권장: `packages/ui/src/tokens/tokens.ts`에서 단일 소스로 관리.
-
-예시(개념)
 
 ```ts
 export const tokens = {
   color: {
-    brand: { primary: '#2563EB', primarySoft: '#EFF6FF' },
+    brand: { primary: '#2563EB', primaryHover: '#1D4ED8', primarySoft: '#EFF6FF' },
     bg: { default: '#FFFFFF', subtle: '#F9FAFB' },
-    text: { primary: '#111827', secondary: '#6B7280' },
+    surface: { default: '#FFFFFF', elevated: '#FFFFFF' },
+    text: { primary: '#111827', secondary: '#6B7280', tertiary: '#9CA3AF', onBrand: '#FFFFFF' },
     border: { default: '#E5E7EB', strong: '#D1D5DB' },
     status: {
       success: '#10B981', successSoft: '#ECFDF5',
@@ -155,6 +163,8 @@ export const tokens = {
       danger:  '#EF4444', dangerSoft:  '#FEF2F2',
       info:    '#3B82F6', infoSoft:    '#EFF6FF',
     },
+    focus: { ring: 'rgba(37, 99, 235, 0.35)' },
+    overlay: { scrim: 'rgba(17, 24, 39, 0.40)' },
   },
   space: { 0: 0, 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40, 12: 48 },
   radius: { sm: 8, md: 12, lg: 16, pill: 999 },
@@ -167,37 +177,37 @@ export const tokens = {
 
 ---
 
-## 4) 레이아웃 & 정보 구조
+## 3) 레이아웃 & 정보 구조
 
-### 4.1 Web
+### 3.1 Web
 - 최대 폭: 1200px(대시보드), 960px(콘텐츠)
 - 기본 padding: 16~24px
 - 카드 간격: 12~16px
 - 데이터 밀도가 높은 화면(대시보드)은 **정렬/타이포/간격 규칙**으로 “질서”를 만든다
-- 표(테이블) 사용 시
+- 테이블 사용 시
   - 헤더 고정 + 행 hover
-  - 과한 줄무늬(stripe) 금지
+  - 과한 stripe 금지
   - 중요 숫자(금액/건수)는 tabular-nums 적용
 
-### 4.2 Mobile
+### 3.2 Mobile
 - Safe Area 준수
 - 기본 horizontal padding: 16px
 - 리스트 아이템 간격: 8~12px
 - 주요 CTA는 하단 고정 영역 사용 가능(키보드/안전영역 대응)
 
-### 4.3 Breakpoints(권장)
+### 3.3 Breakpoints(권장)
 - Web: `sm(640) / md(768) / lg(1024) / xl(1280)`
 - 모바일은 1열, 태블릿 이상에서 카드 그리드(2~3열) 허용
 
 ---
 
-## 5) 컴포넌트 시스템 (packages/ui 기준)
+## 4) 컴포넌트 시스템 (packages/ui 기준)
 
 > 공통 원칙: “상태를 숨기지 않는다.”
-> - disabled는 진짜 비활성(클릭 불가) + 이유를 주변 문구로 설명
+> - disabled는 진짜 비활성(클릭 불가) + **이유를 주변 문구로 설명**
 > - loading은 버튼 너비 고정(레이아웃 점프 방지)
 
-### 5.1 Button
+### 4.1 Button
 
 Variant
 - `primary`: 예약/확정/결제(핵심 CTA)
@@ -216,28 +226,28 @@ State
 - radius: `md`
 - 아이콘 버튼은 최소 44x44 hit area
 
-### 5.2 Input / Form
+### 4.2 Input / Form
 - 라벨은 상단 고정(placeholder로 라벨 대체 금지)
 - 오류는 필드 바로 아래 1줄 + 해결 힌트 포함
   - 예: “연락처 형식을 확인해 주세요. 예) 010-1234-5678”
 - 필수 입력은 `*`로 표기(과다 사용 금지)
-- 전화번호/금액/날짜는 **입력 마스크** 또는 포맷팅으로 신뢰감을 높인다
+- 전화번호/금액/날짜는 **입력 마스크** 또는 포맷팅으로 신뢰감 강화
 
-### 5.3 Select / DateTime
-- 예약 도메인에서 **날짜/시간 선택은 핵심**
-- Mobile: 네이티브 피커 or 바텀시트
+### 4.3 Select / DateTime (예약 핵심)
+- Mobile: 네이티브 피커 또는 바텀시트
 - Web: 캘린더 팝오버(키보드 접근 가능)
+- 비활성 시간/불가 시간은 회색 처리 + 사유(“이미 예약됨”)
 
-### 5.4 Card
+### 4.4 Card
 - 기본: `surface.default` + `border.default` + `radius.lg`
 - 클릭 가능 카드: hover/pressed 피드백 제공(전체가 눌리는 느낌)
-- 카드 내부 정보 계층
-  - 1순위: 날짜/시간
-  - 2순위: 위치(지역)
-  - 3순위: 금액
-  - 4순위: 서비스/옵션 요약
+- 카드 정보 계층(권장)
+  1) 날짜/시간
+  2) 위치(지역)
+  3) 금액
+  4) 서비스/옵션 요약
 
-### 5.5 Badge / Chip (상태 표현 핵심)
+### 4.5 Badge / Chip (상태 표현)
 
 예약 상태 배지(Plan 02 enum 기준)
 - `pending` → “요청됨” (`status.infoSoft` + `status.info`)
@@ -250,23 +260,23 @@ State
 - 색만으로 구분 금지: **항상 텍스트 라벨 포함**
 - 상태 라벨은 **항상 동일 문구** 사용(번역/변형 금지)
 
-### 5.6 List Item (예약/일감 리스트)
+### 4.6 List Item (예약/일감 리스트)
 - 좌: 핵심(날짜/시간, 지역, 가격)
 - 우: 상태 배지 + Chevron
 - 한 줄 요약(서비스/평수)은 secondary 텍스트로
 
-### 5.7 Toast / Snackbar
+### 4.7 Toast / Snackbar
 - 성공: 짧게(“저장됐어요.”)
 - 실패: “왜 + 다음 행동”
   - 예: “네트워크가 불안정해요. 잠시 후 다시 시도해 주세요.”
 - 중복 토스트 폭주 방지(동일 에러 debounce)
 
-### 5.8 Modal / Bottom Sheet
+### 4.8 Modal / Bottom Sheet
 - Mobile: 바텀시트 우선(한 손 조작)
 - Web: 모달은 결정이 필요한 순간에만(취소/확정)
 - destructive 동작(취소/삭제)은 2-step 확인(모달/바텀시트)
 
-### 5.9 Table (Web Dashboard)
+### 4.9 Table (Web Dashboard)
 - 기본은 카드형 리스트(모바일 호환)
 - 관리 화면 등에서 테이블 필요 시
   - 첫 열: 식별자(예약일시/예약번호)
@@ -275,22 +285,22 @@ State
 
 ---
 
-## 6) 예약/청소 도메인 UX 패턴
+## 5) 예약/청소 도메인 UX 패턴
 
-### 6.1 예약 생성(권장 3~5 step)
-- Step 예시
-  1) 서비스/평수
-  2) 날짜/시간
-  3) 주소
-  4) 요청사항/예산(선택)
-  5) 확인
+### 5.1 예약 생성(권장 3~5 step)
+Step 예시
+1) 서비스/평수
+2) 날짜/시간
+3) 주소
+4) 요청사항/예산(선택)
+5) 확인
 
 원칙
 - stepper(진행 표시) 제공
 - 뒤로 가도 입력 유지
 - 가격/예산은 가능한 빨리 노출(“나중에 공개” 금지)
 
-### 6.2 신뢰 장치(Trust Builders)
+### 5.2 신뢰 장치(Trust Builders)
 - 제공자 카드(요약)
   - 후기 수, 평균 평점, 최근 활동(가능하면)
   - 인증/배지(있다면)
@@ -299,12 +309,12 @@ State
 - 상태 타임라인
   - “요청됨 → 확정 → 진행중 → 완료/취소”를 동일한 순서/라벨로
 
-### 6.3 빈 상태(Empty) / 로딩(Skeleton)
+### 5.3 빈 상태(Empty) / 로딩(Skeleton)
 - 빈 상태는 “왜 비었는지 + 다음 행동”
   - 예: “아직 예약이 없어요. 지금 예약을 만들어볼까요?”
 - 로딩은 스켈레톤(리스트/카드)
 
-### 6.4 취소/환불 UX(기본 규칙)
+### 5.4 취소/환불 UX(기본 규칙)
 - 취소 시
   - “취소 사유(선택)”는 분석 목적이므로 강제하지 않는다
   - 환불/수수료가 존재하면 **취소 확인 화면에서 먼저** 보여준다
@@ -313,13 +323,14 @@ State
 
 ---
 
-## 7) 아이콘 & 일러스트
+## 6) 아이콘 & 이미지 가이드
 
+### 6.1 아이콘
 - 아이콘: **Lucide**
   - Web: `lucide-react`
   - Mobile: `lucide-react-native`
 
-권장 아이콘 매핑
+권장 매핑
 - 예약: `Calendar`
 - 위치: `MapPin`
 - 청소: `Sparkles` 또는 `Brush`
@@ -327,13 +338,15 @@ State
 - 후기: `Star`
 - 결제/금액: `CreditCard`
 
-일러스트 정책
+### 6.2 이미지/일러스트 정책
 - MVP에서는 최소화(아이콘 + 타이포 + 여백으로 ‘깔끔함’ 유지)
-- 일러스트를 쓰더라도 단색/저채도 위주, 정보 전달을 방해하지 않기
+- 이미지가 필요하다면
+  - **고해상도/밝은 톤/저채도**
+  - 배경이 지저분한 사진 금지(청결 이미지 훼손)
 
 ---
 
-## 8) 모션(Interaction & Motion)
+## 7) 모션(Interaction & Motion)
 
 - 목표: “빠르고 안정적”
 - 애니메이션: 150~220ms (과한 바운스 지양)
@@ -346,7 +359,7 @@ State
 
 ---
 
-## 9) 접근성(Accessibility) 체크리스트
+## 8) 접근성(Accessibility) 체크리스트
 
 - 대비(Contrast): 본문 텍스트는 WCAG AA(가능하면 4.5:1)
 - 터치 타겟: Mobile 최소 44x44
@@ -357,9 +370,9 @@ State
 
 ---
 
-## 10) 구현 가이드 (Web / Mobile)
+## 9) 구현 가이드 (Web / Mobile)
 
-### 10.1 Tailwind (Web)
+### 9.1 Tailwind (Web)
 - 토큰을 `tailwind.config`의 `theme.extend.colors`로 매핑
 - 컴포넌트 변형(variant/size)은 CVA(class-variance-authority) 권장
 
@@ -370,32 +383,31 @@ State
   - `native-theme.ts` (rn)
   를 생성해 일원화
 
-### 10.2 React Native (Mobile)
+### 9.2 React Native (Mobile)
 - NativeWind 사용 시 Tailwind 토큰을 그대로 공유
 - 미사용 시 StyleSheet + 토큰 참조
 
 권장
 - 색/간격/타입 토큰은 import해서 사용(하드코딩 금지)
 
-### 10.3 상태(Booking Status) 단일 매핑
+### 9.3 상태(Booking Status) 단일 매핑
 - 서버 enum(Plan 02) → UI Badge 라벨/색상은 **이 문서 기준으로 고정**
 - Web/Mobile 모두 동일 매핑 함수 사용
   - 예: `getBookingStatusMeta(status)` → `{ label, fg, bg }`
 
 ---
 
-## 11) 용어(라벨) 표준화
+## 10) 용어(라벨) 표준화
 
-- 사용자 화면: “청소 제공자”(명확) / 내부 코드: cleaner
-- 예약 상태 라벨 고정
-  - “요청됨 / 확정 / 진행중 / 완료 / 취소됨”
+- 사용자 화면: “청소 제공자” / 내부 코드: `cleaner`
+- 예약 상태 라벨 고정: “요청됨 / 확정 / 진행중 / 완료 / 취소됨”
 - 금액
   - 변동 가능: “예상 금액”
   - 확정 이후: “확정 금액”
 
 ---
 
-## 12) Done Criteria (적용 완료 기준)
+## 11) Done Criteria (적용 완료 기준)
 
 - [ ] Web/Mobile 모두 동일한 토큰 집합을 참조
 - [ ] Button/Input/Card/Badge/Toast 스펙이 문서와 일치
@@ -405,7 +417,7 @@ State
 
 ---
 
-## 13) Next
+## 12) Next
 
 - `packages/ui`에 토큰/컴포넌트 구현 + 스토리(Storybook/Preview) 구축(선택)
 - 상태 배지/토스트 문구를 정책(취소/환불/노쇼) 문서와 동기화
