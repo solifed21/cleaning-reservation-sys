@@ -8,6 +8,15 @@ Expo React Native 기반의 모바일 앱 화면 구성 및 네비게이션 흐�
 - **Routing**: Expo Router (File-based routing)
 - **Styling**: NativeWind (Tailwind CSS)
 - **UI Components**: `packages/ui` (Shared Component)
+- **State Management**: TanStack Query (Server) + Zustand (Client)
+- **Form Handling**: React Hook Form + Zod
+
+## 🎯 설계 원칙
+
+1. **역할 기반 네비게이션**: 요청자(Customer)와 제공자(Cleaner)는 서로 다른 탭 구조
+2. **선언적 UI**: 상태에 따른 UI 렌더링 (로딩/에러/성공)
+3. **오프라인 우선**: 네트워크 실패 시 캐시된 데이터 표시
+4. **접근성**: 스크린 리더 지원, 최소 터치 영역 44pt
 
 ---
 
@@ -165,26 +174,235 @@ app/
 
 `packages/ui/src/mobile/` 에 위치할 핵심 컴포넌트
 
-1.  **Button**: Primary(Brand Color), Secondary(Gray), Outline, Ghost
-2.  **Input / TextArea**: 라벨, 에러 메시지 포함
-3.  **Card**: 그림자, 라운드 처리가 된 컨테이너
-4.  **Badge**: 상태 표시용 (Success, Warning, Info, Danger)
-5.  **Avatar**: 사용자 프로필 이미지 (원형)
-6.  **ScreenLayout**: SafeAreaView 처리 및 공통 패딩
-7.  **BottomActionSheet**: 옵션 선택용 모달
+### 기본 컴포넌트 (Atoms)
+
+```
+packages/ui/src/mobile/atoms/
+├── Button.tsx              # 버튼 (Primary, Secondary, Outline, Ghost, Danger)
+├── Input.tsx               # 텍스트 입력
+├── TextArea.tsx            # 멀티라인 입력
+├── Badge.tsx               # 상태 배지
+├── Avatar.tsx              # 프로필 이미지
+├── Icon.tsx                # 아이콘 래퍼
+├── Skeleton.tsx            # 로딩 스켈레톤
+├── Spinner.tsx             # 로딩 인디케이터
+└── Typography.tsx          # 텍스트 스타일 (H1, H2, Body, Caption)
+```
+
+### 복합 컴포넌트 (Molecules)
+
+```
+packages/ui/src/mobile/molecules/
+├── Card.tsx                # 카드 컨테이너
+├── ListItem.tsx            # 리스트 아이템
+├── SearchBar.tsx           # 검색 바
+├── FilterChip.tsx          # 필터 칩
+├── DatePicker.tsx          # 날짜 선택
+├── TimePicker.tsx          # 시간 선택
+├── BottomSheet.tsx         # 바텀 시트
+├── Modal.tsx               # 모달
+├── EmptyState.tsx          # 빈 상태
+├── ErrorBoundary.tsx       # 에러 바운더리
+└── Toast.tsx               # 토스트 알림
+```
+
+### 화면 컴포넌트 (Organisms)
+
+```
+packages/ui/src/mobile/organisms/
+├── BookingCard.tsx         # 예약 카드
+├── UserCard.tsx            # 사용자 카드
+├── MessageBubble.tsx       # 메시지 버블
+├── ReviewCard.tsx          # 리뷰 카드
+├── CalendarStrip.tsx       # 캘린더 스트립
+├── MapPreview.tsx          # 지도 미리보기
+└── BottomActionBar.tsx     # 하단 액션 바
+```
+
+### 레이아웃 컴포넌트
+
+```
+packages/ui/src/mobile/layouts/
+├── ScreenLayout.tsx        # SafeAreaView + 공통 패딩
+├── TabBarLayout.tsx        # 탭 바 포함 레이아웃
+├── ScrollLayout.tsx        # 스크롤 뷰 래퍼
+└── FormLayout.tsx          # 폼 그룹 래퍼
+```
 
 ---
 
 ## 🔄 데이터 흐름 & 상태 관리
 
-- **Server State**: `TanStack Query`
-  - 예약 목록, 상세 정보, 프로필 등 비동기 데이터 캐싱
-  - `invalidateQueries`로 데이터 갱신 (예: 예약 수락 후 목록 갱신)
-- **Client State**: `React Context` or `Zustand` (필요 시)
-  - 앱 전역 설정 (테마, 알림 권한 상태)
-  - 복잡한 폼 상태 (예약 요청 위자드)
-- **Form Handling**: `React Hook Form` + `Zod`
-  - 유효성 검사 로직 공유 (`packages/shared/validators`)
+### Server State (TanStack Query)
+
+**쿼리 키 구조:**
+```typescript
+// apps/mobile/src/lib/query-keys.ts
+export const queryKeys = {
+  // 사용자
+  me: ['user', 'me'] as const,
+  user: (id: string) => ['user', id] as const,
+  
+  // 예약
+  bookings: (filters: BookingFilters) => ['bookings', filters] as const,
+  booking: (id: string) => ['booking', id] as const,
+  availableBookings: (filters: AvailableFilters) => ['bookings', 'available', filters] as const,
+  
+  // 메시지
+  messages: (bookingId: string) => ['messages', bookingId] as const,
+  
+  // 리뷰
+  reviews: (userId: string) => ['reviews', userId] as const,
+  
+  // 지역
+  areas: ['areas'] as const,
+} as const;
+```
+
+**쿼리 훅 예시:**
+```typescript
+// apps/mobile/src/hooks/use-bookings.ts
+export function useBookings(filters: BookingFilters) {
+  return useQuery({
+    queryKey: queryKeys.bookings(filters),
+    queryFn: () => api.getBookings(filters),
+    staleTime: 1000 * 60, // 1분
+  });
+}
+
+export function useAcceptBooking() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (bookingId: string) => api.acceptBooking(bookingId),
+    onSuccess: () => {
+      // 관련 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    },
+  });
+}
+```
+
+### Client State (Zustand)
+
+**전역 스토어:**
+```typescript
+// apps/mobile/src/stores/app-store.ts
+interface AppState {
+  // 인증
+  isAuthenticated: boolean;
+  user: User | null;
+  role: 'customer' | 'cleaner' | null;
+  
+  // 알림
+  unreadNotifications: number;
+  
+  // 액션
+  setUser: (user: User | null) => void;
+  setRole: (role: 'customer' | 'cleaner') => void;
+  incrementUnread: () => void;
+}
+
+export const useAppStore = create<AppState>((set) => ({
+  isAuthenticated: false,
+  user: null,
+  role: null,
+  unreadNotifications: 0,
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
+  setRole: (role) => set({ role }),
+  incrementUnread: () => set((s) => ({ unreadNotifications: s.unreadNotifications + 1 })),
+}));
+```
+
+**폼 상태 (React Hook Form + Zod):**
+```typescript
+// apps/mobile/src/lib/validators/booking.ts
+export const bookingSchema = z.object({
+  subAreaId: z.string().min(1, '지역을 선택해주세요'),
+  scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  scheduledTime: z.string().regex(/^\d{2}:\d{2}$/),
+  duration: z.number().min(1).max(8),
+  address: z.string().min(5, '주소를 입력해주세요'),
+  roomType: z.enum(['oneRoom', 'twoRoom', 'threeRoom', 'studio', 'office']),
+  services: z.array(z.string()).min(1, '서비스를 선택해주세요'),
+});
+
+// apps/mobile/src/screens/booking/new.tsx
+export default function NewBookingScreen() {
+  const { control, handleSubmit } = useForm({
+    resolver: zodResolver(bookingSchema),
+    defaultValues: { ... },
+  });
+  
+  const { mutate, isPending } = useCreateBooking();
+  
+  const onSubmit = handleSubmit((data) => {
+    mutate(data, {
+      onSuccess: (booking) => {
+        router.push(`/booking/${booking.id}`);
+      },
+    });
+  });
+  
+  return ( ... );
+}
+```
+
+### 로딩 & 에러 처리
+
+**선언적 상태 렌더링:**
+```typescript
+// apps/mobile/src/components/QueryState.tsx
+type Props<T> = {
+  query: UseQueryResult<T>;
+  children: (data: T) => React.ReactNode;
+  loadingFallback?: React.ReactNode;
+  emptyFallback?: React.ReactNode;
+};
+
+export function QueryState<T>({ query, children, loadingFallback, emptyFallback }: Props<T>) {
+  if (query.isLoading) {
+    return loadingFallback || <Skeleton count={3} />;
+  }
+  
+  if (query.isError) {
+    return (
+      <ErrorState
+        message="데이터를 불러오지 못했습니다"
+        onRetry={query.refetch}
+      />
+    );
+  }
+  
+  if (!query.data || (Array.isArray(query.data) && query.data.length === 0)) {
+    return emptyFallback || <EmptyState message="데이터가 없습니다" />;
+  }
+  
+  return <>{children(query.data)}</>;
+}
+
+// 사용 예시
+<QueryState query={bookingsQuery} emptyFallback={<EmptyBookings />}>
+  {(bookings) => <BookingList bookings={bookings} />}
+</QueryState>
+```
+
+**글로벌 에러 바운더리:**
+```typescript
+// apps/mobile/app/_layout.tsx
+export default function RootLayout() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary FallbackComponent={GlobalErrorFallback}>
+        <Stack>
+          <Stack.Screen name="index" />
+          ...
+        </Stack>
+      </ErrorBoundary>
+    </QueryClientProvider>
+  );
+}
+```
 
 ---
 
@@ -195,3 +413,362 @@ app/
 - [x] 공통 UI 컴포넌트 (Button, Input, Card) 구현
 - [x] 인증 화면 (Login, Signup) 퍼블리싱
 - [x] 탭 네비게이션 (Customer/Cleaner 분기) 구현
+
+---
+
+## ⚡ 성능 최적화 전략
+
+### 1. 렌더링 최적화
+
+```typescript
+// FlatList 최적화
+<FlatList
+  data={bookings}
+  keyExtractor={(item) => item.id}
+  renderItem={useCallback(({ item }) => <BookingCard booking={item} />, [])}
+  getItemLayout={(data, index) => ({
+    length: CARD_HEIGHT,
+    offset: CARD_HEIGHT * index,
+    index,
+  })}
+  removeClippedSubviews={true}
+  maxToRenderPerBatch={10}
+  windowSize={5}
+  initialNumToRender={10}
+/>
+```
+
+### 2. 이미지 최적화
+
+```typescript
+// apps/mobile/src/components/OptimizedImage.tsx
+import { Image } from 'expo-image';
+
+export function OptimizedImage({ uri, ...props }) {
+  return (
+    <Image
+      source={{ uri, width: props.width, height: props.height }}
+      contentFit="cover"
+      transition={200}
+      placeholder={require('@/assets/images/placeholder.png')}
+      recyclingKey={uri}
+      {...props}
+    />
+  );
+}
+```
+
+### 3. 번들 최적화
+
+```typescript
+// apps/mobile/babel.config.js
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      'react-native-worklets/compiler',
+      [
+        'module-resolver',
+        {
+          root: ['./'],
+          alias: {
+            '@': './src',
+          },
+        },
+      ],
+    ],
+  };
+};
+```
+
+### 4. 폰트 최적화
+
+```typescript
+// apps/mobile/src/lib/load-fonts.ts
+import { useFonts } from 'expo-font';
+
+export function useLoadFonts() {
+  const [loaded] = useFonts({
+    // 시스템 폰트 우선 사용, 필요시 커스텀 폰트 로드
+  });
+  
+  return loaded;
+}
+```
+
+---
+
+## ♿ 접근성 (Accessibility)
+
+### 1. 스크린 리더 지원
+
+```typescript
+// Touchable 요소에 accessibility 레이블 추가
+<TouchableOpacity
+  accessible
+  accessibilityLabel="예약 수락하기"
+  accessibilityHint="이 예약을 수락합니다"
+  accessibilityRole="button"
+>
+  <Text>수락</Text>
+</TouchableOpacity>
+```
+
+### 2. 최소 터치 영역
+
+```typescript
+// 44pt 최소 터치 영역 보장
+<Button className="min-h-[44px] min-w-[44px]">
+  <Text>버튼</Text>
+</Button>
+```
+
+### 3. 색상 대비
+
+- 텍스트/배경: WCAG AA 기준 (4.5:1)
+- 큰 텍스트: 3:1
+- 포커스 표시: 명확한 아웃라인
+
+### 4. 모션 감소
+
+```typescript
+import { ReduceMotion } from 'react-native-reanimated';
+
+// 사용자 설정에 따른 애니메이션 비활성화
+const shouldAnimate = useReducedMotion();
+
+<Animated.View
+  entering={shouldAnimate ? FadeIn : undefined}
+>
+  ...
+</Animated.View>
+```
+
+---
+
+## 🧪 테스트 전략
+
+### 1. 컴포넌트 테스트 (Jest + React Native Testing Library)
+
+```typescript
+// apps/mobile/src/components/__tests__/Button.test.tsx
+describe('Button', () => {
+  it('renders correctly', () => {
+    const { getByText } = render(<Button>Click me</Button>);
+    expect(getByText('Click me')).toBeTruthy();
+  });
+  
+  it('calls onPress when pressed', () => {
+    const onPress = jest.fn();
+    const { getByText } = render(<Button onPress={onPress}>Click</Button>);
+    fireEvent.press(getByText('Click'));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+  
+  it('shows loading state', () => {
+    const { getByTestId } = render(<Button loading>Submit</Button>);
+    expect(getByTestId('spinner')).toBeTruthy();
+  });
+});
+```
+
+### 2. 통합 테스트 (Detox)
+
+```typescript
+// apps/mobile/e2e/login.test.ts
+describe('Login', () => {
+  beforeAll(async () => {
+    await device.launchApp();
+  });
+  
+  it('should login with Kakao', async () => {
+    await element(by.id('kakao-login-button')).tap();
+    await expect(element(by.id('home-screen'))).toBeVisible();
+  });
+});
+```
+
+### 3. E2E 테스트 시나리오
+
+| 시나리오 | 단계 | 예상 결과 |
+|---------|------|----------|
+| 회원가입 | 앱 시작 → 카카오 로그인 → 역할 선택 | 홈 화면 진입 |
+| 예약 생성 | 홈 → 청소 요청 → 폼 작성 → 제출 | 예약 상세 화면 이동 |
+| 예약 수락 | (제공자) 홈 → 요청 목록 → 수락 | 예약 확정 상태 |
+| 채팅 | 예약 상세 → 채팅 → 메시지 전송 | 메시지 표시 |
+| 리뷰 | 예약 완료 → 리뷰 작성 → 제출 | 리뷰 등록 완료 |
+
+---
+
+## 📦 구현 우선순위
+
+### Phase 1: MVP Core (2주)
+
+1. **프로젝트 설정**
+   - Expo Router 설정
+   - NativeWind 설정
+   - TanStack Query 설정
+   - 공통 컴포넌트 구현
+
+2. **인증 플로우**
+   - 카카오/네이버 OAuth
+   - 역할 선택 화면
+   - 인증 상태 관리
+
+3. **예약 시스템 (기본)**
+   - 요청자: 예약 생성
+   - 제공자: 예약 수락/거절
+   - 예약 상세 조회
+
+### Phase 2: 핵심 기능 (2주)
+
+4. **메시지 시스템**
+   - 채팅 목록
+   - 채팅방 (텍스트)
+   - 폴링 기반 메시지
+
+5. **리뷰 시스템**
+   - 리뷰 작성
+   - 리뷰 목록
+
+6. **프로필 관리**
+   - 요청자/제공자 프로필
+   - 설정 화면
+
+### Phase 3: 개선 (1주)
+
+7. **성능 최적화**
+   - 이미지 최적화
+   - 리스트 가상화
+   - 번들 최적화
+
+8. **접근성**
+   - 스크린 리더 지원
+   - 색상 대비 개선
+   - 모션 감소
+
+9. **테스트**
+   - 컴포넌트 테스트
+   - E2E 테스트
+
+---
+
+## 📁 최종 파일 구조
+
+```
+apps/mobile/
+├── app/                           # Expo Router
+│   ├── _layout.tsx               # 루트 레이아웃
+│   ├── index.tsx                 # 진입점
+│   ├── (auth)/                   # 인증 그룹
+│   │   ├── _layout.tsx
+│   │   ├── login.tsx
+│   │   └── signup.tsx
+│   ├── (customer)/               # 요청자 그룹
+│   │   ├── _layout.tsx
+│   │   └── (tabs)/
+│   │       ├── _layout.tsx
+│   │       ├── index.tsx         # 홈
+│   │       ├── explore.tsx       # 청소 요청
+│   │       ├── chat.tsx          # 채팅 목록
+│   │       └── profile.tsx       # 내 정보
+│   ├── (cleaner)/                # 제공자 그룹
+│   │   ├── _layout.tsx
+│   │   └── (tabs)/
+│   │       ├── _layout.tsx
+│   │       ├── index.tsx         # 일감 찾기
+│   │       ├── schedule.tsx      # 내 일정
+│   │       ├── chat.tsx          # 채팅 목록
+│   │       └── profile.tsx       # 내 정보
+│   ├── booking/
+│   │   ├── [id].tsx              # 예약 상세
+│   │   ├── new.tsx               # 새 예약
+│   │   └── review.tsx            # 리뷰 작성
+│   └── chat/
+│       └── [id].tsx              # 채팅방
+├── src/
+│   ├── components/               # 화면별 컴포넌트
+│   ├── hooks/                    # 커스텀 훅
+│   ├── lib/                      # 유틸리티
+│   │   ├── api.ts               # API 클라이언트
+│   │   ├── query-keys.ts        # Query 키
+│   │   ├── storage.ts           # 로컬 스토리지
+│   │   └── validators/          # Zod 스키마
+│   ├── stores/                   # Zustand 스토어
+│   └── types/                    # 타입 정의
+├── assets/
+│   ├── images/
+│   └── fonts/
+├── app.json
+├── babel.config.js
+├── metro.config.js
+├── tailwind.config.js
+├── tsconfig.json
+└── package.json
+```
+
+---
+
+## 🎨 디자인 토큰
+
+```typescript
+// packages/ui/src/tokens/index.ts
+export const tokens = {
+  colors: {
+    brand: {
+      primary: '#3B82F6',
+      secondary: '#8B5CF6',
+    },
+    semantic: {
+      success: '#10B981',
+      warning: '#F59E0B',
+      error: '#EF4444',
+      info: '#3B82F6',
+    },
+    neutral: {
+      50: '#FAFAFA',
+      100: '#F5F5F5',
+      200: '#E5E5E5',
+      300: '#D4D4D4',
+      400: '#A3A3A3',
+      500: '#737373',
+      600: '#525252',
+      700: '#404040',
+      800: '#262626',
+      900: '#171717',
+    },
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+  },
+  borderRadius: {
+    sm: 4,
+    md: 8,
+    lg: 12,
+    xl: 16,
+    full: 9999,
+  },
+  fontSize: {
+    xs: 12,
+    sm: 14,
+    base: 16,
+    lg: 18,
+    xl: 20,
+    '2xl': 24,
+    '3xl': 30,
+  },
+} as const;
+```
+
+---
+
+## 📝 다음 단계
+
+- [ ] 05. 웹 대시보드 설계
+- [ ] 06. UI/UX 테마 & 디자인 시스템
+- [ ] 07. 구현 시작
