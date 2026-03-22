@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #eef6fb;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  font-family: "Pretendard", "Iowan Old Style", "Apple SD Gothic Neo", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

@@ -63,18 +63,18 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                        Client Layer                          │
 ├─────────────────────────────┬───────────────────────────────┤
-│     Expo React Native       │      TanStack Start Web       │
+│     Expo React Native       │          Next.js Web          │
 │     (iOS / Android)         │      (관리자 대시보드)          │
 └─────────────────────────────┴───────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      TanStack Start                          │
-│                    (Full-stack Server)                       │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Routes    │  │   Actions   │  │   Server Functions  │  │
-│  │  (Pages)    │  │  (Mutations)│  │   (API Logic)       │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+│                          Next.js                             │
+│            (App Router + Route Handlers + Actions)           │
+│  ┌─────────────┐  ┌─────────────────────┐  ┌──────────────┐ │
+│  │ App Router  │  │   Route Handlers    │  │    Actions   │ │
+│  │   (Pages)   │  │     (API Logic)     │  │ (Mutations)  │ │
+│  └─────────────┘  └─────────────────────┘  └──────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -91,7 +91,7 @@
 | Layer | Technology | 선택 이유 |
 |-------|------------|-----------|
 | Mobile | Expo React Native | 웹과 코드 공유, 빠른 개발 |
-| Web | TanStack Start | React 기반 풀스택, 타입 안전 |
+| Web | Next.js | App Router, 서버 렌더링, Route Handlers 지원 |
 | Styling | Tailwind CSS + NativeWind | 웹/앱 스타일 통일 |
 | State | TanStack Query | 서버 상태 관리 |
 | DB | PostgreSQL (Neon) | 무료 티어, Serverless |
@@ -152,15 +152,15 @@ cleaning-reservation-sys/
 │   │   ├── hooks/
 │   │   └── package.json
 │   │
-│   └── web/                       # TanStack Start
+│   └── web/                       # Next.js
 │       ├── app/
-│       │   ├── routes/           # 페이지 라우트
-│       │   ├── components/
-│       │   └── routeTree.gen.ts
+│       │   ├── (dashboard)/      # 웹 대시보드 라우트 그룹
+│       │   ├── api/              # Route Handlers
+│       │   └── layout.tsx
 │       ├── server/
 │       │   ├── db/               # Drizzle 스키마, 마이그레이션
 │       │   ├── actions/          # Server Actions
-│       │   └── functions/        # Server Functions
+│       │   └── services/         # 서버 비즈니스 로직
 │       └── package.json
 │
 ├── packages/

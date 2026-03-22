@@ -13,7 +13,7 @@
 - Package manager: **pnpm**
 - Task runner: **Turborepo**
 - Language: **TypeScript**
-- Web app: **TanStack Start + React**
+- Web app: **Next.js + React**
 - Mobile app: **Expo (React Native, Expo Router)**
 - Styling: **Tailwind CSS (web)** + **NativeWind (mobile)**
 
@@ -40,7 +40,7 @@
 cleaning-reservation-sys/
 ├── apps/
 │   ├── mobile/                  # Expo RN + Expo Router
-│   └── web/                     # TanStack Start (web + server)
+│   └── web/                     # Next.js (web + server)
 ├── packages/
 │   ├── shared/                  # 타입/DTO/Zod/유틸 (플랫폼 독립)
 │   └── ui/                      # 공용 UI (웹 우선)
@@ -76,7 +76,7 @@ cleaning-reservation-sys/
   - 웹용 공용 UI 컴포넌트(버튼/입력/모달), Tailwind preset, className 유틸
   - 원칙적으로 `@crs/shared`만 의존
 - `@crs/web`
-  - TanStack Start 기반 웹 + 서버 API
+  - Next.js App Router 기반 웹 + 서버 API
   - `@crs/shared`/`@crs/ui` 소비
 - `@crs/mobile`
   - Expo Router 기반 RN 앱
@@ -200,7 +200,7 @@ strict-peer-dependencies=true
 }
 ```
 
-> 실제 outputs는 스캐폴딩 결과(특히 TanStack Start/Expo)에 맞춰 조정한다.
+> 실제 outputs는 스캐폴딩 결과(특히 Next.js/Expo)에 맞춰 조정한다.
 
 ### 3.5 `.gitignore` (핵심)
 
@@ -537,7 +537,7 @@ packages/ui/
 
 ---
 
-## 8) `apps/web` (TanStack Start)
+## 8) `apps/web` (Next.js App Router)
 
 ### 8.1 의존 관계
 
@@ -551,18 +551,19 @@ packages/ui/
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tanstack start dev",
-    "build": "tanstack start build",
-    "start": "tanstack start start",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start",
 
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "echo 'no tests yet'",
-    "clean": "rimraf dist .tanstack"
+    "clean": "rimraf .next"
   },
   "dependencies": {
     "@crs/shared": "workspace:*",
     "@crs/ui": "workspace:*",
+    "next": "^16.2.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -576,12 +577,14 @@ packages/ui/
 }
 ```
 
-> TanStack Start의 실제 커맨드/패키지명은 스캐폴딩 결과에 맞춰 조정한다.
+> Next.js 메이저 버전은 도입 시점의 안정 버전에 맞춰 조정한다.
 
 ### 8.3 `apps/web` 설정 파일(권장)
 
 - `apps/web/tsconfig.json` → `@crs/tsconfig/app.json` 상속
-- `apps/web/eslint.config.js` → `@crs/eslint-config` import
+- `apps/web/next.config.ts`
+- `apps/web/postcss.config.mjs`
+- `apps/web/eslint.config.mjs`
 - `apps/web/tailwind.config.ts`
   - content scan 경로에 `../../packages/ui/src/**/*.{ts,tsx}` 포함
   - 가능하면 `@crs/ui`에서 Tailwind preset을 export하고 web에서 consume
@@ -689,7 +692,7 @@ pnpm lint
 2. `tooling/tsconfig`, `tooling/eslint-config` 생성
 3. `packages/shared` 생성 + `pnpm --filter @crs/shared build` 성공
 4. `packages/ui` 생성 + `apps/web`에서 import 성공
-5. `apps/web` TanStack Start 스캐폴딩 + workspace deps 연결
+5. `apps/web` Next.js 스캐폴딩 + workspace deps 연결
 6. `apps/mobile` Expo 스캐폴딩 + `@crs/shared` import 성공 (필요 시 metro 설정)
 7. 루트에서 `pnpm build` / `pnpm typecheck` / `pnpm lint` 전체 성공 확인
 

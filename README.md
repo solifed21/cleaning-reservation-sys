@@ -5,10 +5,10 @@
 ## Tech Stack
 
 - **Mobile**: Expo React Native (Expo Router)
-- **Web**: TanStack Start + React
+- **Web**: Next.js (App Router) + React
 - **Styling**: Tailwind CSS + NativeWind
 - **State**: TanStack Query
-- **Backend**: TanStack Start (Full-stack)
+- **Backend**: Next.js Route Handlers + Server Actions
 - **Database**: PostgreSQL (Neon/Supabase)
 - **ORM**: Drizzle ORM
 
@@ -19,7 +19,8 @@ cleaning-reservation-sys/
 ├── apps/
 │   ├── mobile/          # (예정) Expo React Native 앱 (Expo Router)
 │   │   └── app/         # (예정) 라우트 그룹: (auth)/(customer)/(cleaner)/(shared)
-│   └── web/             # TanStack Start 웹 + API
+│   └── web/             # Next.js 웹 + API
+│       ├── app/         # App Router + Route Handlers
 │       └── server/
 │           └── db/
 │               ├── schema/      # Drizzle ORM 스키마
