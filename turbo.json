@@ -9,7 +9,6 @@
       "dependsOn": ["^build"],
       "outputs": [
         "dist/**",
-        ".tanstack/**",
         ".next/**",
         ".expo/**",
         "build/**"

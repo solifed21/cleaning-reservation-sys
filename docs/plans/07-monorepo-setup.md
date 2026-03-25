@@ -177,7 +177,6 @@ strict-peer-dependencies=true
       "dependsOn": ["^build"],
       "outputs": [
         "dist/**",
-        ".tanstack/**",
         ".next/**",
         ".expo/**",
         "build/**"
@@ -216,7 +215,6 @@ build
 .turbo
 
 # web
-.tanstack
 .next
 
 # expo

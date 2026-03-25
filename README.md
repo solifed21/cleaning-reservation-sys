@@ -7,7 +7,7 @@
 - **Mobile**: Expo React Native (Expo Router)
 - **Web**: Next.js (App Router) + React
 - **Styling**: Tailwind CSS + NativeWind
-- **State**: TanStack Query
+- **State**: TanStack Query + React state
 - **Backend**: Next.js Route Handlers + Server Actions
 - **Database**: PostgreSQL (Neon/Supabase)
 - **ORM**: Drizzle ORM
@@ -103,6 +103,8 @@ pnpm drizzle-kit push
 | 05 | [웹 대시보드 설계](docs/plans/05-web-dashboard.md) | ✅ 완료 |
 | 06 | [UI/UX 테마 & 디자인 시스템](docs/plans/06-ui-theme.md) | ✅ 완료 (v8, 2026-02-11) |
 | 07 | [모노레포 설계](docs/plans/07-monorepo-setup.md) | ✅ 완료 (v9, 2026-02-11) |
+| 08 | [구현 갭 리뷰](docs/plans/08-gap-review.md) | 📝 초안 (2026-03-25) |
+| 09 | [TDD 개발 워크플로우](docs/plans/09-tdd-workflow.md) | 📝 초안 (2026-03-25) |
 
 ## License
 

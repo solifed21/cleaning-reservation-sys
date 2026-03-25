@@ -293,10 +293,11 @@
 #### 쿼리 구조
 ```tsx
 // hooks/useUsers.ts
-export function useUsers(filters: UserFilters) {
+export function useUsers(filters: UserFilters, initialData?: UsersResponse) {
   return useQuery({
     queryKey: ['admin', 'users', filters],
     queryFn: () => adminApi.getUsers(filters),
+    initialData,
     staleTime: 30_000, // 30초
   });
 }
@@ -315,11 +316,24 @@ export function useUpdateUserStatus() {
 
 #### SSR 설정
 ```tsx
-// routes/admin/users.tsx
-export const loader = async ({ request }: RouteContext) => {
-  const users = await adminApi.getUsers({});
-  return { users };
-};
+// app/admin/users/page.tsx
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
+
+export default async function AdminUsersPage() {
+  const queryClient = new QueryClient();
+  const filters = {};
+
+  await queryClient.prefetchQuery({
+    queryKey: ['admin', 'users', filters],
+    queryFn: () => adminApi.getUsers(filters),
+  });
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <UsersPageClient />
+    </HydrationBoundary>
+  );
+}
 ```
 
 ### 권한 체크 (Authorization)
