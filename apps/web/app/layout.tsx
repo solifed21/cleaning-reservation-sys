@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '창원 원룸 청소 예약',
-  description: '창원 지역 원룸 청소 예약을 위한 Next.js 기반 웹 서비스',
+  title: '청소 예약 서비스 웹 프로토타입',
+  description: '일반 사용자와 관리자 모두를 위한 청소 예약 서비스 웹 프로토타입',
 };
 
 export default function RootLayout({

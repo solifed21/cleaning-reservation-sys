@@ -1,81 +1,137 @@
-const pillars = [
+import Link from 'next/link';
+import { StatusBadge, SurfaceCard, UserTopNav } from './prototype-ui';
+
+const roleCards = [
   {
-    title: '예약 흐름 정리',
-    description: '요청 등록부터 완료 리뷰까지의 상태 전이를 한 화면 구조에 맞게 다시 정리합니다.',
+    title: '요청자',
+    description: '주소와 일정, 요청사항을 입력해 청소 예약을 생성하고 상태를 추적합니다.',
+    href: '/customer',
+    cta: '요청자 화면 보기',
   },
   {
-    title: '운영 대시보드 준비',
-    description: '관리자 화면과 API를 Next.js App Router와 Route Handlers 기준으로 분리합니다.',
+    title: '청소 제공자',
+    description: '대기 중인 일감을 살펴보고 수락, 일정 관리, 완료 처리 흐름을 확인합니다.',
+    href: '/cleaner',
+    cta: '제공자 화면 보기',
   },
   {
-    title: 'DB 레이어 재사용',
-    description: '기존 Drizzle 스키마는 유지하고 Next.js 서버 레이어에서 그대로 연결합니다.',
+    title: '운영자',
+    description: '회원, 예약, 리뷰 현황을 웹 대시보드에서 한 번에 모니터링합니다.',
+    href: '/admin',
+    cta: '관리자 화면 보기',
   },
 ];
 
-const milestones = [
-  '요청자와 청소 제공자용 핵심 플로우 정의',
-  '예약, 메시지, 리뷰, 알림 스키마 초안 작성',
-  'Next.js App Router 기반 웹 엔트리 포인트 생성',
+const serviceSteps = [
+  '로그인 후 요청자 또는 제공자 역할을 선택합니다.',
+  '요청자는 예약을 만들고, 제공자는 대기 일감을 검토합니다.',
+  '예약 상태와 메시지, 리뷰 흐름을 웹에서 이어서 확인합니다.',
+];
+
+const exampleBookings = [
+  {
+    title: '이사 전 원룸 청소',
+    meta: '2026.03.28 10:00 · 창원시 성산구',
+    amount: '78,000원',
+    status: '확정',
+    tone: 'success' as const,
+  },
+  {
+    title: '욕실 집중 청소',
+    meta: '2026.03.29 15:30 · 창원시 의창구',
+    amount: '52,000원',
+    status: '요청됨',
+    tone: 'info' as const,
+  },
 ];
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(215,238,252,0.9),_transparent_38%),linear-gradient(180deg,#f8fbfd_0%,#eef6fb_100%)] text-slate-900">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-10 sm:px-10 lg:px-12">
-        <header className="rounded-[2rem] border border-white/70 bg-white/80 p-8 shadow-card backdrop-blur">
-          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-700">
-            Cleaning Reservation System
-          </p>
-          <div className="mt-6 grid gap-8 lg:grid-cols-[1.4fr_0.9fr]">
-            <div>
-              <h1 className="max-w-3xl font-serif text-4xl leading-tight text-slate-950 sm:text-5xl">
-                창원 원룸 청소 예약 플랫폼을 Next.js 중심 구조로 전환했습니다.
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                웹 앱은 Next.js App Router를 기준으로 재구성하고, 기존 Drizzle 스키마는 그대로 살려서
-                예약 도메인부터 다시 확장할 수 있게 잡아두었습니다.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <span className="rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-medium text-cyan-900">
-                  Next.js App Router
-                </span>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
-                  Route Handlers
-                </span>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
-                  Drizzle ORM
-                </span>
-              </div>
+    <main className="min-h-screen">
+      <UserTopNav current="/" />
+
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <SurfaceCard className="overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#f8fbff_48%,#eef6ff_100%)] p-6 sm:p-8">
+            <div className="inline-flex items-center rounded-full border border-brand-primary/15 bg-brand-soft px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-brand-primary">
+              User + Admin Web
+            </div>
+            <h1 className="mt-6 max-w-4xl text-4xl font-bold leading-tight text-text-primary sm:text-5xl">
+              청소 예약 서비스를 웹에서도 직접 사용하고, 운영팀은 별도 어드민으로 관리합니다.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-text-secondary sm:text-lg">
+              기존 문서의 모바일 사용자 흐름을 웹으로 확장하고, 관리자 대시보드는 `/admin` 아래에
+              독립적으로 유지하는 구조로 재정렬했습니다.
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/login"
+                className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-primary px-5 text-sm font-semibold text-text-onbrand transition hover:bg-brand-primary-hover"
+              >
+                사용자 로그인 보기
+              </Link>
+              <Link
+                href="/customer/request"
+                className="inline-flex h-12 items-center justify-center rounded-xl border border-border px-5 text-sm font-semibold text-text-primary"
+              >
+                예약 생성 화면 보기
+              </Link>
             </div>
 
-            <section className="rounded-[1.5rem] bg-slate-950 p-6 text-white">
-              <p className="text-sm uppercase tracking-[0.24em] text-cyan-200">Current focus</p>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
-                {milestones.map((item) => (
-                  <li key={item} className="flex gap-3">
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-cyan-300" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-                `/api/health` Route Handler를 함께 추가해 Next.js 서버 레이어 진입점도 바로 확인할 수 있습니다.
-              </p>
-            </section>
-          </div>
-        </header>
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              {serviceSteps.map((step, index) => (
+                <article key={step} className="rounded-3xl border border-border bg-white/90 px-4 py-4">
+                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
+                    Step {index + 1}
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-text-secondary">{step}</p>
+                </article>
+              ))}
+            </div>
+          </SurfaceCard>
 
-        <section className="mt-8 grid gap-5 md:grid-cols-3">
-          {pillars.map((pillar) => (
-            <article
-              key={pillar.title}
-              className="rounded-[1.5rem] border border-white/70 bg-white/75 p-6 shadow-card backdrop-blur"
-            >
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">Pillar</p>
-              <h2 className="mt-4 text-2xl font-semibold text-slate-950">{pillar.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">{pillar.description}</p>
-            </article>
+          <SurfaceCard className="bg-slate-950 p-6 text-white sm:p-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-blue-100">Live Preview</p>
+            <h2 className="mt-4 text-2xl font-semibold leading-tight">
+              웹 사용자 흐름에서 바로 확인할 수 있는 핵심 상태
+            </h2>
+            <div className="mt-6 space-y-4">
+              {exampleBookings.map((booking) => (
+                <article key={booking.title} className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-base font-semibold text-white">{booking.title}</p>
+                      <p className="mt-2 text-sm text-slate-300">{booking.meta}</p>
+                    </div>
+                    <StatusBadge label={booking.status} tone={booking.tone} />
+                  </div>
+                  <p className="mt-4 text-lg font-semibold tabular-nums text-white">{booking.amount}</p>
+                </article>
+              ))}
+            </div>
+            <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 px-4 py-4 text-sm leading-6 text-slate-300">
+              요청자와 제공자 화면은 설계 검토용 프로토타입이며, 이후 실제 인증과 API를 붙이는
+              단계로 이어질 수 있습니다.
+            </div>
+          </SurfaceCard>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-3">
+          {roleCards.map((card) => (
+            <SurfaceCard key={card.title} className="p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">
+                {card.title}
+              </p>
+              <h2 className="mt-4 text-2xl font-semibold text-text-primary">{card.title} 흐름</h2>
+              <p className="mt-3 text-sm leading-7 text-text-secondary">{card.description}</p>
+              <Link
+                href={card.href}
+                className="mt-6 inline-flex h-11 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-text-primary"
+              >
+                {card.cta}
+              </Link>
+            </SurfaceCard>
           ))}
         </section>
       </div>
