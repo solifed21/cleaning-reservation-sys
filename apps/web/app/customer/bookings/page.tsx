@@ -1,132 +1,113 @@
 import Link from 'next/link';
-import { StatusBadge, SurfaceCard, UserTopNav } from '../../prototype-ui';
+import { UserPage } from '@/components/prototype/user-shell';
+import { StatusBadge } from '@/components/prototype/ui';
 
-const filters = ['전체', '요청됨', '확정', '진행중', '완료', '취소됨'];
+const filters = ['전체', '진행 중', '완료', '취소'];
 
 const bookings = [
   {
-    id: '#C-1038',
-    title: '이사 전 전체 청소',
-    schedule: '2026.03.28 (토) 10:00',
-    address: '창원시 성산구 중앙동',
-    amount: '78,000원',
-    status: '확정',
+    title: '2026년 5월 24일 (금)',
+    time: '오후 2:00',
+    address: '경남 창원시 성산구 중앙대로 101',
+    detail: '창원 아파트 102동 1504호',
+    amount: '85,000원',
+    status: '방문 대기',
     tone: 'success' as const,
+    secondary: '취소/환불',
+    primary: '상세보기',
   },
   {
-    id: '#C-1037',
-    title: '주방 + 욕실 집중 청소',
-    schedule: '2026.03.29 (일) 15:30',
-    address: '창원시 의창구 팔용동',
-    amount: '52,000원',
-    status: '요청됨',
-    tone: 'info' as const,
-  },
-  {
-    id: '#C-1036',
-    title: '원룸 기본 청소',
-    schedule: '2026.03.31 (화) 19:00',
-    address: '창원시 진해구 이동',
-    amount: '64,000원',
+    title: '2026년 5월 12일 (일)',
+    time: '오전 10:00',
+    address: '경남 창원시 의창구 원이대로 320',
+    detail: '창원 더시티세븐 702호',
+    amount: '120,000원',
     status: '완료',
     tone: 'neutral' as const,
+    secondary: '상세보기',
+    primary: '리뷰 작성',
   },
-];
-
-const timeline = [
-  '요청됨: 제공자 수락 대기',
-  '확정: 일정과 주소 다시 확인',
-  '진행중: 채팅으로 현장 조율',
-  '완료: 리뷰 작성 가능',
 ];
 
 export default function CustomerBookingsPage() {
   return (
-    <main className="min-h-screen">
-      <UserTopNav current="/customer/bookings" />
+    <UserPage current="/customer/bookings">
+      <section className="mx-auto w-full max-w-3xl">
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="font-headline text-3xl font-extrabold tracking-tight text-brand-primary">내 예약 목록</h1>
+            <p className="mt-2 text-sm text-text-secondary">진행 중인 예약과 과거 이용 내역을 확인하세요.</p>
+          </div>
+          <button
+            type="button"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-surface-muted px-4 text-sm font-medium text-text-primary"
+          >
+            최근 3개월
+            <span className="text-text-tertiary">▾</span>
+          </button>
+        </div>
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <SurfaceCard className="p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">Bookings</p>
-            <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h1 className="text-3xl font-semibold text-text-primary">내 예약 목록</h1>
-                <p className="mt-3 text-sm leading-6 text-text-secondary">
-                  모바일 문서의 상태별 목록 구조를 웹 카드 리스트로 바꿔, 일정과 주소, 금액을 빠르게
-                  비교할 수 있게 했습니다.
-                </p>
+        <div className="mb-10 flex overflow-x-auto rounded-[1rem] bg-surface-muted p-1.5">
+          {filters.map((filter, index) => (
+            <button
+              key={filter}
+              type="button"
+              className={`min-w-[88px] flex-1 whitespace-nowrap rounded-[0.8rem] py-2.5 text-sm ${
+                index === 0
+                  ? 'bg-white font-bold text-brand-primary shadow-sm'
+                  : 'font-medium text-text-secondary'
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-6">
+          {bookings.map((booking) => (
+            <article key={`${booking.title}-${booking.time}`} className="rounded-[1.5rem] border border-border/20 bg-white p-6 shadow-[0_20px_40px_rgba(0,52,102,0.06)]">
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <StatusBadge label={booking.status} tone={booking.tone} />
+                  <h3 className="font-headline text-xl font-bold tracking-tight text-text-primary">{booking.title}</h3>
+                  <p className="text-lg font-bold text-brand-primary">{booking.time}</p>
+                </div>
+                <div className="text-right">
+                  <p className="mb-1 text-[11px] uppercase tracking-[0.18em] text-text-tertiary">결제금액</p>
+                  <p className="text-xl font-extrabold tabular-nums text-text-primary">{booking.amount}</p>
+                </div>
               </div>
-              <Link
-                href="/customer/request"
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-primary px-4 text-sm font-semibold text-text-onbrand"
-              >
-                새 예약 만들기
-              </Link>
-            </div>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              {filters.map((filter, index) => (
+              <div className="mb-6 flex items-center gap-3 border-t border-dashed border-border/40 py-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-muted text-brand-primary">
+                  <span className="h-3 w-3 rounded-full bg-brand-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">{booking.address}</p>
+                  <p className="text-xs text-text-secondary">{booking.detail}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <button
-                  key={filter}
-                  className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-medium ${
-                    index === 0
-                      ? 'bg-brand-primary text-text-onbrand'
-                      : 'border border-border bg-white text-text-secondary'
+                  type="button"
+                  className="inline-flex h-12 items-center justify-center rounded-xl bg-surface-muted text-sm font-semibold text-text-primary transition-colors hover:bg-slate-100"
+                >
+                  {booking.secondary}
+                </button>
+                <Link
+                  href="/customer/request"
+                  className={`inline-flex h-12 items-center justify-center rounded-xl text-sm font-semibold text-white ${
+                    booking.status === '완료' ? 'bg-brand-secondary' : 'bg-brand-primary'
                   }`}
                 >
-                  {filter}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {bookings.map((booking) => (
-                <article key={booking.id} className="rounded-3xl border border-border bg-surface-subtle p-5">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-text-tertiary">
-                        {booking.id}
-                      </p>
-                      <h2 className="mt-2 text-xl font-semibold text-text-primary">{booking.title}</h2>
-                      <p className="mt-3 text-sm text-text-secondary">{booking.schedule}</p>
-                      <p className="mt-1 text-sm text-text-secondary">{booking.address}</p>
-                    </div>
-                    <StatusBadge label={booking.status} tone={booking.tone} />
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-lg font-semibold tabular-nums text-text-primary">{booking.amount}</p>
-                    <div className="flex flex-wrap gap-3">
-                      <button className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-text-primary">
-                        채팅 보기
-                      </button>
-                      <button className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-text-primary">
-                        상세 보기
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </SurfaceCard>
-
-          <SurfaceCard className="p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">Status Guide</p>
-            <h2 className="mt-3 text-2xl font-semibold text-text-primary">예약 상태에 따른 행동</h2>
-            <div className="mt-6 space-y-3">
-              {timeline.map((item, index) => (
-                <article key={item} className="flex gap-4 rounded-3xl border border-border bg-surface-subtle p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-sm font-semibold text-brand-primary">
-                    {index + 1}
-                  </div>
-                  <p className="text-sm leading-6 text-text-secondary">{item}</p>
-                </article>
-              ))}
-            </div>
-          </SurfaceCard>
-        </section>
-      </div>
-    </main>
+                  {booking.primary}
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </UserPage>
   );
 }

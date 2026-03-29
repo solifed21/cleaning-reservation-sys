@@ -11,23 +11,26 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          primary: '#2563EB',
-          'primary-hover': '#1D4ED8',
-          soft: '#EFF6FF',
+          primary: '#1565D8',
+          'primary-hover': '#114FA6',
+          secondary: '#13B8A6',
+          'secondary-soft': '#E8FBF7',
+          soft: '#EAF3FF',
         },
         surface: {
-          subtle: '#F9FAFB',
+          subtle: '#F2F7FB',
+          muted: '#F6F9FC',
           default: '#FFFFFF',
           elevated: '#FFFFFF',
         },
         border: {
-          DEFAULT: '#E5E7EB',
-          strong: '#D1D5DB',
+          DEFAULT: '#DCE5F0',
+          strong: '#BCCDE1',
         },
         text: {
           primary: '#111827',
-          secondary: '#6B7280',
-          tertiary: '#9CA3AF',
+          secondary: '#526072',
+          tertiary: '#8795A8',
           onbrand: '#FFFFFF',
         },
         status: {
@@ -45,8 +48,9 @@ const config: Config = {
         sans: ['Pretendard', 'Apple SD Gothic Neo', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 1px 2px rgba(0, 0, 0, 0.06)',
-        elevated: '0 6px 16px rgba(0, 0, 0, 0.08)',
+        card: '0 12px 40px rgba(17, 24, 39, 0.06)',
+        elevated: '0 18px 56px rgba(17, 24, 39, 0.10)',
+        float: '0 16px 48px rgba(21, 101, 216, 0.14)',
       },
     },
   },

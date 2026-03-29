@@ -1,164 +1,161 @@
 import Link from 'next/link';
-import { StatusBadge, SurfaceCard, UserTopNav } from '../prototype-ui';
+import { UserPage } from '@/components/prototype/user-shell';
+import { HighlightPill, StatusBadge } from '@/components/prototype/ui';
 
 const quickActions = [
+  { title: '빠른 예약하기', detail: '3분 만에 간편하게', href: '/customer/request', tone: 'bg-blue-50 text-brand-primary' },
+  { title: '자주 쓰는 주소', detail: '집, 사무실 등 관리', href: '/customer/bookings', tone: 'bg-slate-50 text-text-secondary' },
+  { title: '내 리뷰 보기', detail: '작성한 후기 12건', href: '/customer/bookings', tone: 'bg-slate-50 text-text-secondary' },
+];
+
+const assurances = [
   {
-    title: '새 예약 만들기',
-    description: '서비스 유형, 일정, 주소, 요청사항을 입력해 예약을 만듭니다.',
-    href: '/customer/request',
+    title: '안심 보험 100% 가입 완료',
+    body: '작업 중 파손 걱정 없이 창원클린이 책임집니다.',
   },
   {
-    title: '내 예약 보기',
-    description: '상태별 예약 목록을 보고 확정 대기, 진행중, 완료 이력을 확인합니다.',
-    href: '/customer/bookings',
-  },
-  {
-    title: '프로필 관리',
-    description: '내 기본 정보와 자주 쓰는 주소, 알림 선호를 관리하는 화면으로 확장할 수 있습니다.',
-    href: '/login',
+    title: '검증된 파트너 500명 돌파',
+    body: '신원 확인과 전문 교육을 통과한 전문가만 활동합니다.',
   },
 ];
 
-const recentBookings = [
-  {
-    title: '이사 전 전체 청소',
-    when: '2026.03.28 (토) 10:00',
-    where: '창원시 성산구 중앙동',
-    amount: '78,000원',
-    status: '확정',
-    tone: 'success' as const,
-  },
-  {
-    title: '주방 + 욕실 집중 청소',
-    when: '2026.03.29 (일) 15:30',
-    where: '창원시 의창구 팔용동',
-    amount: '52,000원',
-    status: '요청됨',
-    tone: 'info' as const,
-  },
-  {
-    title: '정기 청소 상담 요청',
-    when: '2026.03.31 (화) 19:00',
-    where: '창원시 진해구 이동',
-    amount: '64,000원',
-    status: '완료',
-    tone: 'neutral' as const,
-  },
-];
-
-const flowSteps = [
-  '서비스와 평수를 먼저 선택합니다.',
-  '원하는 날짜와 시간을 고릅니다.',
-  '주소와 상세 위치를 입력합니다.',
-  '요청사항과 예산을 확인합니다.',
-  '최종 확인 후 예약을 제출합니다.',
+const recommendations = [
+  { title: '정기 가사 청소', body: '매주 깔끔하게 유지되는 공간', price: '34,000원~', accent: 'from-[#dcecff] to-[#edf6ff]' },
+  { title: '이사/입주 청소', body: '새로운 시작을 위한 완벽한 첫인상', price: '12,000원/평~', accent: 'from-[#d7f5ee] to-[#effcf8]' },
+  { title: '에어컨 정밀 분해', body: '곰팡이와 냄새를 한 번에 정리', price: '49,000원~', accent: 'from-[#eef2ff] to-[#f7f9ff]' },
+  { title: '침대/매트리스 케어', body: '보이지 않는 먼지와 진드기 제거', price: '29,000원~', accent: 'from-[#f7f1e8] to-[#fdfaf5]' },
 ];
 
 export default function CustomerHomePage() {
   return (
-    <main className="min-h-screen">
-      <UserTopNav current="/customer" />
+    <UserPage current="/customer">
+      <section className="relative overflow-hidden rounded-[2rem] bg-brand-primary px-8 py-10 text-white shadow-xl shadow-brand-primary/10 md:px-12 md:py-12">
+        <div className="relative z-10 max-w-2xl">
+          <h1 className="font-headline text-3xl font-extrabold leading-tight tracking-tight md:text-5xl">
+            안녕하세요, 김창원님.
+            <br />
+            기분 좋은 청소를 준비해 드릴게요.
+          </h1>
+          <p className="mt-4 text-lg font-medium text-white/80">
+            Clean Assurance 전문 클리너들이 당신의 공간을 정돈합니다.
+          </p>
+        </div>
+        <div className="pointer-events-none absolute -bottom-20 right-[-4rem] h-72 w-72 rounded-full border border-white/10 bg-white/5" />
+      </section>
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <SurfaceCard className="bg-[linear-gradient(135deg,#ffffff_0%,#f0f9ff_54%,#ecfeff_100%)] p-6 sm:p-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">Customer Home</p>
-            <h1 className="mt-4 text-4xl font-bold leading-tight text-text-primary sm:text-5xl">
-              예약 생성부터 완료 후 리뷰까지, 요청자 흐름을 웹 화면으로 옮겼습니다.
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-text-secondary sm:text-lg">
-              모바일 문서의 Wizard 구조를 그대로 가져오되, 웹에서는 최근 예약 요약과 빠른 액션을 한
-              페이지에서 먼저 보여주는 방식으로 재배치했습니다.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/customer/request"
-                className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-primary px-5 text-sm font-semibold text-text-onbrand transition hover:bg-brand-primary-hover"
-              >
-                예약 만들기
-              </Link>
-              <Link
-                href="/customer/bookings"
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-border px-5 text-sm font-semibold text-text-primary"
-              >
-                예약 목록 보기
-              </Link>
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-12">
+        <div className="rounded-[1.8rem] border border-border/30 bg-white p-8 shadow-[0_4px_20px_rgba(21,101,216,0.04)] md:col-span-8">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-headline text-2xl font-bold tracking-tight text-text-primary">내 다음 예약</h2>
             </div>
-          </SurfaceCard>
+            <Link href="/customer/bookings" className="text-sm font-bold text-brand-primary hover:underline">
+              전체보기
+            </Link>
+          </div>
 
-          <SurfaceCard className="p-6 sm:p-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">Quick Actions</p>
-            <div className="mt-5 space-y-4">
-              {quickActions.map((action) => (
-                <article key={action.title} className="rounded-3xl border border-border bg-surface-subtle p-4">
-                  <p className="text-lg font-semibold text-text-primary">{action.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-text-secondary">{action.description}</p>
-                  <Link
-                    href={action.href}
-                    className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-text-primary"
-                  >
-                    보기
-                  </Link>
-                </article>
-              ))}
+          <div className="mt-8 grid gap-6 sm:grid-cols-4">
+            <div className="space-y-1">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-text-tertiary">상태</p>
+              <StatusBadge label="진행 중" tone="success" />
             </div>
-          </SurfaceCard>
-        </section>
+            <div className="space-y-1">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-text-tertiary">일시</p>
+              <p className="text-base font-bold text-text-primary">3월 30일(월) 10:00</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-text-tertiary">장소</p>
+              <p className="truncate text-base font-bold text-text-primary">창원시 성산구 중앙동 101동</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-text-tertiary">결제금액</p>
+              <p className="text-base font-bold text-brand-primary">34,000원</p>
+            </div>
+          </div>
 
-        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <SurfaceCard className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">Recent Bookings</p>
-                <h2 className="mt-3 text-2xl font-semibold text-text-primary">최근 예약 요약</h2>
+          <div className="mt-8 flex flex-col gap-4 border-t border-border/30 pt-8 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-muted text-sm font-bold text-brand-primary">
+                4.9
               </div>
-              <span className="rounded-full border border-border px-3 py-1 text-xs font-medium text-text-secondary">
-                상태 우선 정렬
-              </span>
+              <div>
+                <p className="text-sm font-bold text-text-primary">이정희 파트너</p>
+                <p className="text-[11px] font-bold text-brand-secondary">평점 4.9 · 후기 124개</p>
+              </div>
             </div>
+            <Link
+              href="/customer/bookings"
+              className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-primary px-6 text-sm font-bold text-white transition-colors hover:bg-brand-primary-hover"
+            >
+              진행현황 확인
+            </Link>
+          </div>
+        </div>
 
-            <div className="mt-6 space-y-4">
-              {recentBookings.map((booking) => (
-                <article key={`${booking.title}-${booking.when}`} className="rounded-3xl border border-border bg-surface-subtle p-5">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-lg font-semibold text-text-primary">{booking.title}</p>
-                      <p className="mt-2 text-sm text-text-secondary">{booking.when}</p>
-                      <p className="mt-1 text-sm text-text-secondary">{booking.where}</p>
-                    </div>
-                    <StatusBadge label={booking.status} tone={booking.tone} />
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-4">
-                    <p className="text-lg font-semibold tabular-nums text-text-primary">{booking.amount}</p>
-                    <Link href="/customer/bookings" className="text-sm font-semibold text-brand-primary">
-                      상세 보기
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </SurfaceCard>
+        <div className="flex flex-col gap-4 md:col-span-4">
+          {quickActions.map((action) => (
+            <Link
+              key={action.title}
+              href={action.href}
+              className="group flex items-center justify-between rounded-[1.4rem] border border-border/30 bg-white p-5 shadow-sm transition-all hover:shadow-card"
+            >
+              <div className="flex items-center gap-4">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${action.tone}`}>
+                  <span className="h-3 w-3 rounded-full bg-current" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-text-primary">{action.title}</p>
+                  <p className="text-[11px] text-text-secondary">{action.detail}</p>
+                </div>
+              </div>
+              <span className="text-text-tertiary transition-colors group-hover:text-brand-primary">→</span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
-          <SurfaceCard className="p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-primary">Booking Wizard</p>
-            <h2 className="mt-3 text-2xl font-semibold text-text-primary">예약 생성 5단계</h2>
-            <div className="mt-6 space-y-3">
-              {flowSteps.map((step, index) => (
-                <article key={step} className="flex gap-4 rounded-3xl border border-border bg-surface-subtle p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-sm font-semibold text-brand-primary">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-text-primary">Step {index + 1}</p>
-                    <p className="mt-1 text-sm leading-6 text-text-secondary">{step}</p>
-                  </div>
-                </article>
-              ))}
+      <section className="grid gap-6 md:grid-cols-2">
+        {assurances.map((item) => (
+          <article
+            key={item.title}
+            className="flex items-center gap-5 rounded-[1.5rem] border border-brand-primary/20 bg-white p-6"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand-primary">
+              <span className="h-4 w-4 rounded-full bg-brand-primary/80" />
             </div>
-          </SurfaceCard>
-        </section>
-      </div>
-    </main>
+            <div>
+              <p className="text-base font-bold text-text-primary">{item.title}</p>
+              <p className="mt-1 text-sm text-text-secondary">{item.body}</p>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section>
+        <div className="mb-6">
+          <h2 className="font-headline text-2xl font-bold tracking-tight text-text-primary">인기 서비스 추천</h2>
+          <p className="mt-1 text-sm text-text-secondary">김창원님을 위한 맞춤 공간 케어 솔루션</p>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          {recommendations.map((item) => (
+            <article
+              key={item.title}
+              className="overflow-hidden rounded-[1.5rem] border border-border/30 bg-white transition-all duration-300 hover:border-brand-primary/30"
+            >
+              <div className={`h-44 bg-gradient-to-br ${item.accent} p-5`}>
+                <HighlightPill tone="info" className="border-white/50 bg-white/70 text-brand-primary">
+                  추천 서비스
+                </HighlightPill>
+              </div>
+              <div className="p-5">
+                <h3 className="text-lg font-bold text-text-primary">{item.title}</h3>
+                <p className="mt-1 text-xs text-text-secondary">{item.body}</p>
+                <p className="mt-4 font-bold text-brand-primary">{item.price}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </UserPage>
   );
 }

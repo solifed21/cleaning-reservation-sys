@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '청소 예약 서비스 웹 프로토타입',
-  description: '일반 사용자와 관리자 모두를 위한 청소 예약 서비스 웹 프로토타입',
+  title: '창원 원룸 청소 예약 서비스',
+  description: '한국형 홈서비스 UX를 반영한 요청자, 제공자, 관리자용 청소 예약 웹 프로토타입',
 };
 
 export default function RootLayout({
