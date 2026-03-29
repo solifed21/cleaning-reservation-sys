@@ -1,6 +1,9 @@
 {
   "name": "@crs/web",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev --webpack --port 3002",
     "build": "next build --webpack",
